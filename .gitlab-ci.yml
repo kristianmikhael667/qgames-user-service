@@ -13,7 +13,7 @@ variables:
   DB_HOST: data.ooniet.id
   BASE_URL: /inbox-service
   DOCKER_NETWORK: doomo-net
-  K8S_DB_HOST: https://node18860-development.jh-beon.cloud/
+  K8S_DB_HOST: https://node18860-development.jh-beon.cloud
   K8S_DB_DRIVER: mysql
   K8S_TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME-k8s:latest
   K8S_TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME-k8s:$CI_COMMIT_SHORT_SHA
