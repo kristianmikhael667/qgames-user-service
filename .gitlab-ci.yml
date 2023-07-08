@@ -10,7 +10,6 @@ variables:
   PORT_NUMBER: 3504
   DB_NAME: qgrowid_users
   DB_USER: root
-  DB_HOST: data.ooniet.id
   BASE_URL: /inbox-service
   DOCKER_NETWORK: doomo-net
   K8S_DB_HOST: https://node18860-development.jh-beon.cloud
@@ -30,8 +29,8 @@ build_k8s:
   before_script: 
     - echo -e "DB_NAME=$DB_NAME \n 
         DB_USER=$DB_USER \n
-        DB_PASS=$DB_PASSWORD \n
-        DB_HOST=$K8S_DB_HOST \n
+        DB_PASS=$DB_PASS \n
+        DB_HOST=$DB_HOST \n
         JWT_SECRET= $JWT_SECRET" >> .env
 
   script:  
