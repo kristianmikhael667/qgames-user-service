@@ -72,12 +72,5 @@ to use this flag:
 
 	http.NewHttp(e, f)
 
-	serverAddr := os.Getenv("SERVER_ADDR")
-	if serverAddr == "" {
-		serverAddr = os.Getenv("APP_PORT") // Alamat server default jika SERVER_ADDR tidak ada
-	}
-
-	e.Logger.Fatal(e.Start(serverAddr))
-
-	// e.Logger.Fatal(e.Start(":" + os.Getenv("APP_PORT")))
+	e.Logger.Fatal(e.Start(":" + os.Getenv("APP_PORT")))
 }
