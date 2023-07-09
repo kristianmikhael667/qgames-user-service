@@ -45,7 +45,7 @@ to use this flag:
 		"none",
 		`this argument for check if user want to seed table
 to use this flag:
-	use -seed=all to seed all tables`,
+	use -seed=all to seed all table`,
 	)
 
 	flag.Parse()
@@ -72,5 +72,12 @@ to use this flag:
 
 	http.NewHttp(e, f)
 
-	e.Logger.Fatal(e.Start(":" + os.Getenv("APP_PORT")))
+	serverAddr := os.Getenv("SERVER_ADDR")
+	if serverAddr == "" {
+		serverAddr = os.Getenv("APP_PORT") // Alamat server default jika SERVER_ADDR tidak ada
+	}
+
+	e.Logger.Fatal(e.Start(serverAddr))
+
+	// e.Logger.Fatal(e.Start(":" + os.Getenv("APP_PORT")))
 }
