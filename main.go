@@ -45,7 +45,7 @@ to use this flag:
 		"none",
 		`this argument for check if user want to seed table
 to use this flag:
-	use -seed=all to seed all table`,
+	use -seed=all to seed all tables`,
 	)
 
 	flag.Parse()
