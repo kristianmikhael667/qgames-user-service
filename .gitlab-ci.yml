@@ -1,25 +1,5 @@
 stages:
-  - build
   - deploy
-  - configure
-
-variables:
-  TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
-  TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
-  APP_NAME: qgrowid-user
-  PORT_NUMBER: 3504
-  DB_NAME: qgrowid_users
-  DB_USER: root
-  BASE_URL: /inbox-service
-  DOCKER_NETWORK: doomo-net
-  K8S_DB_HOST: https://node18860-development.jh-beon.cloud
-  K8S_DB_DRIVER: mysql
-  K8S_TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME-k8s:latest
-  K8S_TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME-k8s:$CI_COMMIT_SHORT_SHA
-  K8S_YAML: inbox-deploy.yaml
-  K8S_SERVICE_YAML: inbox-service.yaml
-  K8S_DPL_NAME: doomo-inbox-dpl
-  K8S_NAMESPACE: doomo-development
 
 build_k8s:
   stage: build
