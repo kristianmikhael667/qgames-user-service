@@ -7,6 +7,7 @@ import (
 	"main/internal/factory"
 	"main/internal/pkg/util"
 	"main/internal/repository"
+	pkgo "main/package/dto"
 	pkgutil "main/package/util"
 	"main/package/util/response"
 )
@@ -17,6 +18,8 @@ type service struct {
 
 type Service interface {
 	RegisterUsers(ctx context.Context, payload *dto.RegisterUsersRequestBody) (*dto.UserWithJWTResponse, error)
+	CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error)
+	CheckPhonesLogin(ctx context.Context, phone *pkgo.ByPhoneNumber) (bool, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -82,4 +85,27 @@ func (s *service) RegisterUsers(ctx context.Context, payload *dto.RegisterUsersR
 	}
 
 	return result, nil
+}
+
+func (s *service) CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error) {
+	// Check Phone
+	isExistPhone, err := s.UserRepository.ExistByPhone(ctx, &payload.Phone)
+	if err != nil {
+		return true, response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
+	}
+	if isExistPhone {
+		return true, response.ErrorBuilder(&response.ErrorConstant.NotFound, errors.New("Phone Not Found"))
+	}
+	return false, err
+}
+
+func (s *service) CheckPhonesLogin(ctx context.Context, phone *pkgo.ByPhoneNumber) (bool, error) {
+	isExistPhone, err := s.UserRepository.ExistByPhone(ctx, &phone.Phone)
+	if err != nil {
+		return true, response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
+	}
+	if !isExistPhone {
+		return true, response.ErrorBuilder(&response.ErrorConstant.NotFound, errors.New("Phone Not Found"))
+	}
+	return false, err
 }

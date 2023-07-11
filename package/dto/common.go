@@ -10,6 +10,8 @@ type Pagination struct {
 type SearchGetRequest struct {
 	Pagination
 	Search   string   `query:"search"`
+	StartAt  string   `query:"start_at"`
+	EndAt    string   `query:"end_at"`
 	AscField []string `query:"asc_field"`
 	DscField []string `query:"dsc_field"`
 }
@@ -28,6 +30,10 @@ type PaginationInfo struct {
 
 type ByIDRequest struct {
 	ID uint `param:"id" validate:"required"`
+}
+
+type ByPhoneNumber struct {
+	Phone string `query:"phone"`
 }
 
 func GetLimitOffset(p *Pagination) (limit, offset int) {

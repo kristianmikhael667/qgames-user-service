@@ -5,6 +5,7 @@ import (
 	"main/internal/dto"
 	"main/internal/model"
 	pkgdto "main/package/dto"
+	"regexp"
 	"strings"
 
 	"gorm.io/gorm"
@@ -81,13 +82,16 @@ func (r *user) ExistByEmail(ctx context.Context, email *string) (bool, error) {
 	return isExist, nil
 }
 
-func (r *user) ExistByPhone(ctx context.Context, phone *string) (bool, error) {
+func (r *user) ExistByPhone(ctx context.Context, numbers *string) (bool, error) {
+	phones := strings.Replace(*numbers, "62", "0", 2)
+	re := regexp.MustCompile(`\+62(\D|$)`)
+	result := re.ReplaceAllString(phones, "0")
 	var (
 		count   int64
 		isExist bool
 	)
 
-	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", phone).Count(&count).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", result).Count(&count).Error; err != nil {
 		return isExist, err
 	}
 	if count > 0 {
