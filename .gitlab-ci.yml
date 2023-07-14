@@ -1,7 +1,6 @@
 stages:
   - build
   - deploy
-  # - configure
 
 variables:
   TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
@@ -29,23 +28,13 @@ k8s_build:
   services:
     - docker:dind
   before_script:
-    - echo -e "DB_NAME=$DB_NAME \n
-      DB_USER=$DB_USER \n
-      DB_PASSWORD=$DB_PASSWORD \n
-      DB_HOST=$K8S_DB_HOST \n
-      DB_DRIVER=$K8S_DB_DRIVER \n
-      RELAXED=localhost,api2.qrowid.id,$APP_NAME,$SERVER_USER \n
-      TCASHURL=$TCASHURL \n
-      TCASHACCOUNT=$TCASHACCOUNT \n
-      TCASHSENDER=$TCASHSENDER \n
-      TCASHPASS=$TCASHPASS \n
-      MIDDLE_URL=$BASE_URL \n
-      SMS_APP_ID=$SMS_APP_ID \n
-      HOST=$HOST \n
-      JWT_SECRET= $JWT_SECRET" >> .env
+    - echo -e "DB_NAME=$DB_NAME \nDB_USER=$DB_USER \nDB_PASSWORD=$DB_PASSWORD \nDB_HOST=$K8S_DB_HOST \nDB_DRIVER=$K8S_DB_DRIVER \nRELAXED=localhost,api2.qrowid.id,$APP_NAME,$SERVER_USER \nTCASHURL=$TCASHURL \nTCASHACCOUNT=$TCASHACCOUNT \nTCASHSENDER=$TCASHSENDER \nTCASHPASS=$TCASHPASS \nMIDDLE_URL=$BASE_URL \nSMS_APP_ID=$SMS_APP_ID \nHOST=$HOST \nJWT_SECRET=$JWT_SECRET" >> .env
 
   script:
-    - echo "$CI_BUILD_TOKEN"
+    - docker build -t $K8S_TAG_COMMIT -t $K8S_TAG_LATEST .
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker push $K8S_TAG_COMMIT
+    - docker push $K8S_TAG_LATEST
   only:
     - dev
 
