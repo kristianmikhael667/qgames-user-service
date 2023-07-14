@@ -42,7 +42,7 @@ deploy_k8s:
   stage: deploy
   script:
     - chmod og= $ID_RSA_K8S
-    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP_K8S "cd qrowid-cluster && git checkout main && git pull origin main"
+    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP_K8S "cd qrowid-cluster && git checkout dev && git pull origin dev"
     - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP_K8S "cd qrowid-cluster/deployments && kubectl apply -f $K8S_YAML"
     - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP_K8S "cd qrowid-cluster/services && kubectl apply -f $K8S_SERVICE_YAML"
     - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP_K8S "kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
