@@ -28,7 +28,7 @@ k8s_build:
   services:
     - docker:dind
   before_script:
-    - echo -e "DB_NAME=$DB_NAME \nDB_USER=$DB_USER \nDB_PASSWORD=$DB_PASSWORD \nDB_HOST=$K8S_DB_HOST \nDB_DRIVER=$K8S_DB_DRIVER \nRELAXED=localhost,api2.qrowid.id,$APP_NAME,$SERVER_USER \nTCASHURL=$TCASHURL \nTCASHACCOUNT=$TCASHACCOUNT \nTCASHSENDER=$TCASHSENDER \nTCASHPASS=$TCASHPASS \nMIDDLE_URL=$BASE_URL \nSMS_APP_ID=$SMS_APP_ID \nHOST=$HOST \nJWT_SECRET=$JWT_SECRET" >> .env
+    - echo -e "DB_NAME=$DB_NAME \nDB_USER=$DB_USER \nDB_PASSWORD=$DB_PASSWORD \nDB_HOST=$K8S_DB_HOST \nDB_DRIVER=$K8S_DB_DRIVER \nRELAXED=localhost,api2.qrowid.id,$APP_NAME,19131-2766 \nTCASHURL=$TCASHURL \nTCASHACCOUNT=$TCASHACCOUNT \nTCASHSENDER=$TCASHSENDER \nTCASHPASS=$TCASHPASS \nMIDDLE_URL=$BASE_URL \nSMS_APP_ID=$SMS_APP_ID \nHOST=$HOST \nJWT_SECRET=$JWT_SECRET" >> .env
 
   script:
     - docker build -t $K8S_TAG_COMMIT -t $K8S_TAG_LATEST .
@@ -42,9 +42,9 @@ deploy_k8s:
   stage: deploy
   script:
     - chmod og= $ID_RSA_K8S
-    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP_K8S -p 3022 "cd qgrowid-cluster && git checkout dev && git pull origin dev"
-    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP_K8S -p 3022 "cd qgrowid-cluster/deployments && kubectl apply -f $K8S_YAML"
-    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP_K8S -p 3022 "cd qgrowid-cluster/services && kubectl apply -f $K8S_SERVICE_YAML"
-    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP_K8S -p 3022 "kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
+    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no 19131-2766@gate.jagoan.cloud -p 3022 "cd qgrowid-cluster && git checkout dev && git pull origin dev"
+    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no 19131-2766@gate.jagoan.cloud -p 3022 "cd qgrowid-cluster/deployments && kubectl apply -f $K8S_YAML"
+    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no 19131-2766@gate.jagoan.cloud -p 3022 "cd qgrowid-cluster/services && kubectl apply -f $K8S_SERVICE_YAML"
+    - ssh -i $ID_RSA_K8S -o StrictHostKeyChecking=no 19131-2766@gate.jagoan.cloud -p 3022 "kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
   only:
     - dev
