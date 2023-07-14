@@ -45,11 +45,10 @@ k8s_build:
       JWT_SECRET= $JWT_SECRET" >> .env
 
   script:
-    - echo "$CI_BUILD_TOKEN" | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
-    - docker build -t $K8S_TAG_COMMIT -t $K8S_TAG_LATEST .
+    - docker build -t myapp:commit-$CI_COMMIT_SHORT_SHA -t myapp:latest .
     - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
-    - docker push $K8S_TAG_COMMIT
-    - docker push $K8S_TAG_LATEST
+    - docker push myapp:commit-$CI_COMMIT_SHORT_SHA
+    - docker push myapp:latest
   only:
     - dev
 
