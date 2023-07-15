@@ -6,7 +6,7 @@ import (
 	"main/internal/dto"
 	"main/internal/factory"
 	"main/internal/pkg/util"
-	"main/internal/repository"
+	repository "main/internal/repository/user_repo"
 	pkgo "main/package/dto"
 	pkgutil "main/package/util"
 	"main/package/util/response"

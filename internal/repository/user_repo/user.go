@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"main/internal/dto"
-	"main/internal/model"
+	model "main/internal/model/users"
 	pkgdto "main/package/dto"
 	"regexp"
 	"strings"

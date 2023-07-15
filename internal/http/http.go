@@ -1,7 +1,7 @@
 package http
 
 import (
-	"main/internal/app/auth"
+	"main/internal/app/users/auth"
 	"main/internal/factory"
 	"main/package/util"
 

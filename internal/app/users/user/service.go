@@ -4,7 +4,7 @@ import (
 	"context"
 	"main/internal/dto"
 	"main/internal/factory"
-	"main/internal/repository"
+	repository "main/internal/repository/user_repo"
 	pkgdto "main/package/dto"
 	res "main/package/util/response"
 )

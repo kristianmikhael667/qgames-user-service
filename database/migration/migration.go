@@ -3,7 +3,7 @@ package migration
 import (
 	"fmt"
 	"main/database"
-	"main/internal/model"
+	model "main/internal/model/users"
 	"reflect"
 	"strings"
 )
