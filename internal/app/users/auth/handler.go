@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"main/internal/dto"
+	dto "main/internal/dto/users_req_res"
 	"main/internal/factory"
 	pkgo "main/package/dto"
 	"main/package/util/response"

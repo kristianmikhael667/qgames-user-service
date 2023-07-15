@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
-	"main/internal/dto"
+	dto "main/internal/dto/users_req_res"
 	"main/internal/factory"
 	"main/internal/pkg/util"
 	repository "main/internal/repository/user_repo"

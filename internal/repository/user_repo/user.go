@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"main/internal/dto"
+	dto "main/internal/dto/users_req_res"
 	model "main/internal/model/users"
 	pkgdto "main/package/dto"
 	"regexp"

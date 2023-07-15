@@ -1,7 +1,7 @@
 package user
 
 import (
-	"main/internal/dto"
+	dto "main/internal/dto/users_req_res"
 	"main/internal/middleware"
 	"main/internal/pkg/util"
 
