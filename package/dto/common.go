@@ -32,10 +32,6 @@ type ByIDRequest struct {
 	ID uint `param:"id" validate:"required"`
 }
 
-type ByPhoneNumber struct {
-	Phone string `query:"phone"`
-}
-
 func GetLimitOffset(p *Pagination) (limit, offset int) {
 
 	if p.PageSize != nil {

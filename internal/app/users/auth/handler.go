@@ -3,7 +3,6 @@ package auth
 import (
 	dto "main/internal/dto/users_req_res"
 	"main/internal/factory"
-	pkgo "main/package/dto"
 	"main/package/util/response"
 
 	"github.com/labstack/echo/v4"
@@ -36,7 +35,7 @@ func (h *handler) RegisterUsers(c echo.Context) error {
 }
 
 func (h *handler) CheckPhone(c echo.Context) error {
-	phoneNumber := new(pkgo.ByPhoneNumber)
+	phoneNumber := new(dto.CheckPhoneReqBody)
 	if err := c.Bind(phoneNumber); err != nil {
 		return response.ErrorBuilder(&response.ErrorConstant.NotFound, err).Send(c)
 	}

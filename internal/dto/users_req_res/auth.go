@@ -15,6 +15,10 @@ type (
 		Profile  string `json:"profile"`
 	}
 
+	CheckPhoneReqBody struct {
+		Phone string `json:"phone" validate:"omitempty"`
+	}
+
 	JWTClaims struct {
 		Uuid  string `json:"uid_user"`
 		Email string `json:"email"`

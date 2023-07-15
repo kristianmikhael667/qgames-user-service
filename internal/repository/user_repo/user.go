@@ -5,7 +5,6 @@ import (
 	dto "main/internal/dto/users_req_res"
 	model "main/internal/model/users"
 	pkgdto "main/package/dto"
-	"regexp"
 	"strings"
 
 	"gorm.io/gorm"
@@ -15,7 +14,7 @@ type User interface {
 	FindAll(ctx context.Context, payload *pkgdto.SearchGetRequest, pagination *pkgdto.Pagination) ([]model.User, *pkgdto.PaginationInfo, error)
 	Save(ctx context.Context, users *dto.RegisterUsersRequestBody) (model.User, error)
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
-	ExistByPhone(ctx context.Context, email *string) (bool, error)
+	ExistByPhone(ctx context.Context, email string) (bool, error)
 }
 
 type user struct {
@@ -82,16 +81,16 @@ func (r *user) ExistByEmail(ctx context.Context, email *string) (bool, error) {
 	return isExist, nil
 }
 
-func (r *user) ExistByPhone(ctx context.Context, numbers *string) (bool, error) {
-	phones := strings.Replace(*numbers, "62", "0", 2)
-	re := regexp.MustCompile(`\+62(\D|$)`)
-	result := re.ReplaceAllString(phones, "0")
+func (r *user) ExistByPhone(ctx context.Context, numbers string) (bool, error) {
+	replaced := strings.Replace(numbers, "+62", "0", -1)
+	replaced = strings.Replace(replaced, "62", "0", -1)
+
 	var (
 		count   int64
 		isExist bool
 	)
 
-	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", result).Count(&count).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", replaced).Count(&count).Error; err != nil {
 		return isExist, err
 	}
 	if count > 0 {

@@ -15,7 +15,8 @@ func NewSeeder() *seed {
 }
 
 func (s *seed) SeedAll() {
-	userSeeder(s.DB)
+	// userSeeder(s.DB)
+	roleSeeder(s.DB)
 }
 
 func (s *seed) DeleteAll() {

@@ -7,5 +7,5 @@ func (h *handler) Route(g *echo.Group) {
 		return c.JSON(200, map[string]string{"status": "User Service Oke"})
 	})
 	g.POST("/signup-users", h.RegisterUsers)
-	g.GET("/check-number", h.CheckPhone)
+	g.POST("/check-number", h.CheckPhone)
 }

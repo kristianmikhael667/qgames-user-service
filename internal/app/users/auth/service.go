@@ -7,7 +7,6 @@ import (
 	"main/internal/factory"
 	"main/internal/pkg/util"
 	repository "main/internal/repository/user_repo"
-	pkgo "main/package/dto"
 	pkgutil "main/package/util"
 	"main/package/util/response"
 )
@@ -19,7 +18,7 @@ type service struct {
 type Service interface {
 	RegisterUsers(ctx context.Context, payload *dto.RegisterUsersRequestBody) (*dto.UserWithJWTResponse, error)
 	CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error)
-	CheckPhonesLogin(ctx context.Context, phone *pkgo.ByPhoneNumber) (bool, error)
+	CheckPhonesLogin(ctx context.Context, phone *dto.CheckPhoneReqBody) (bool, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -41,7 +40,7 @@ func (s *service) RegisterUsers(ctx context.Context, payload *dto.RegisterUsersR
 	}
 
 	// Check Phone
-	isExistPhone, err := s.UserRepository.ExistByPhone(ctx, &payload.Phone)
+	isExistPhone, err := s.UserRepository.ExistByPhone(ctx, payload.Phone)
 	if err != nil {
 		return result, response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
 	}
@@ -49,11 +48,14 @@ func (s *service) RegisterUsers(ctx context.Context, payload *dto.RegisterUsersR
 		return result, response.ErrorBuilder(&response.ErrorConstant.Duplicate, errors.New("Phone Already Exists"))
 	}
 
+	// Hash Password
 	hashedPassword, err := pkgutil.HashPassword(payload.Password)
 	if err != nil {
 		return result, response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
 	}
 	payload.Password = hashedPassword
+
+	// Hash Pin
 
 	data, err := s.UserRepository.Save(ctx, payload)
 
@@ -89,7 +91,7 @@ func (s *service) RegisterUsers(ctx context.Context, payload *dto.RegisterUsersR
 
 func (s *service) CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error) {
 	// Check Phone
-	isExistPhone, err := s.UserRepository.ExistByPhone(ctx, &payload.Phone)
+	isExistPhone, err := s.UserRepository.ExistByPhone(ctx, payload.Phone)
 	if err != nil {
 		return true, response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
 	}
@@ -99,8 +101,8 @@ func (s *service) CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequ
 	return false, err
 }
 
-func (s *service) CheckPhonesLogin(ctx context.Context, phone *pkgo.ByPhoneNumber) (bool, error) {
-	isExistPhone, err := s.UserRepository.ExistByPhone(ctx, &phone.Phone)
+func (s *service) CheckPhonesLogin(ctx context.Context, phone *dto.CheckPhoneReqBody) (bool, error) {
+	isExistPhone, err := s.UserRepository.ExistByPhone(ctx, phone.Phone)
 	if err != nil {
 		return true, response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
 	}
