@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
-	"errors"
+	"main/helper"
 	dto "main/internal/dto/users_req_res"
 	model "main/internal/model/users"
 	pkgdto "main/package/dto"
+	pkgutil "main/package/util"
+	"main/package/util/response"
 	"strings"
 	"time"
 
@@ -17,7 +19,7 @@ type User interface {
 	Save(ctx context.Context, users *dto.RegisterUsersRequestBody) (model.User, error)
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
-	RequestOtp(ctx context.Context, phone string) (string, error)
+	RequestOtp(ctx context.Context, phone string) (model.User, bool, string, error)
 }
 
 type user struct {
@@ -64,7 +66,7 @@ func (r *user) Save(ctx context.Context, users *dto.RegisterUsersRequestBody) (m
 		Pin:      users.Pin,
 	}
 	if err := r.Db.WithContext(ctx).Save(&newUsers).Error; err != nil {
-		return newUsers, nil
+		return newUsers, err
 	}
 	return newUsers, nil
 }
@@ -102,8 +104,8 @@ func (r *user) ExistByPhone(ctx context.Context, numbers string) (bool, error) {
 	return isExist, nil
 }
 
-func (r *user) RequestOtp(ctx context.Context, phone string) (string, error) {
-	// var users model.User
+func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, string, error) {
+	var users model.User
 	var trylimit model.Attempt
 
 	phones := strings.Replace(phone, "+62", "0", -1)
@@ -119,7 +121,7 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (string, error) {
 			LastAttempt: timenow,
 		}
 		if err := r.Db.WithContext(ctx).Save(&newAttemp).Error; err != nil {
-			return "Created Attemp", err
+			return users, false, "Failed create attemp", err
 		}
 	}
 
@@ -127,17 +129,53 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (string, error) {
 	lastTest := trylimit.LastAttempt.Format("2006-01-02") // Format: YYYY-MM-DD
 
 	if (trylimit.OtpAttempt >= 3) && (curr == lastTest) {
-		return "Your access is still restricted", errors.New("403")
+		helper.Logger("error", "Otp already 3 times  : "+string(rune(403)), "Rc: "+string(rune(403)))
+		return users, false, "Otp already 3 times", response.CustomErrorBuilder(403, "Error", "Otp already 3 times")
+
 	} else if curr != lastTest {
 		trylimit.OtpAttempt = 0
 	}
 
-	// pin := helper.GeneratePin(6)
-	// status_user := false
+	otp := helper.GeneratePin(6)
+	status_user := false
 
-	// if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phones).First(&users).Error; err != nil {
-	// 	status_user := true
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phones).First(&users).Error; err != nil {
+		status_user := true
 
-	// }
-	return "ss", nil
+		newUsers := model.User{
+			Phone: users.Phone,
+		}
+
+		if err := r.Db.WithContext(ctx).Save(&newUsers).Error; err != nil {
+			return users, false, "Failed create users", err
+		} else {
+			return users, status_user, "Success create users", nil
+		}
+	}
+
+	// Sementara karena blm ada otp dari vendor maka kita buat send ke logs dlu
+	helper.Logger("info", "Success Send Otp with Number: "+phones+" Your OTP : "+otp, "Rc: "+string(rune(201)))
+
+	hashedOtp, err := pkgutil.HashPassword(otp)
+	if err != nil {
+		return users, status_user, "Error Hash OTP", response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
+	}
+
+	newOtp := model.Otp{
+		Phone:     phones,
+		Otp:       hashedOtp,
+		ExpiredAt: time.Now().Add(1 * time.Minute),
+	}
+	if err := r.Db.WithContext(ctx).Save(&newOtp).Error; err != nil {
+		return users, false, "Failed create otp", err
+	}
+
+	trylimit.OtpAttempt++
+	trylimit.LastAttempt = time.Now()
+
+	if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+		return users, false, "Failed create otp", err
+	}
+
+	return users, status_user, "Success get users", nil
 }

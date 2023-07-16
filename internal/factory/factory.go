@@ -9,6 +9,7 @@ type Factory struct {
 	UserRepository       repository.User
 	RoleRepository       repository.Role
 	PermissionRepository repository.Permission
+	AssignRepository     repository.Assign
 }
 
 func NewFactory() *Factory {
@@ -17,5 +18,6 @@ func NewFactory() *Factory {
 		repository.NewUserRepository(db),
 		repository.NewRoleRepository(db),
 		repository.NewPermissionRepository(db),
+		repository.NewAssign(db),
 	}
 }

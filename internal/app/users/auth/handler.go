@@ -45,9 +45,15 @@ func (h *handler) RequestOtp(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	checkphone, err := h.service.RequestOtp(c.Request().Context(), phoneNumber)
+	checkphone, status, err := h.service.RequestOtp(c.Request().Context(), phoneNumber)
 	if err != nil {
 		return response.ErrorResponse(err).Send(c)
 	}
-	return response.CustomSuccessBuilder(201, checkphone, "Waiting OTP Send", nil).Send(c)
+
+	if status == true {
+		return response.CustomSuccessBuilder(201, checkphone, "Waiting OTP Send", nil).Send(c)
+	} else {
+		return response.CustomSuccessBuilder(200, checkphone, "Waiting OTP Send", nil).Send(c)
+	}
+
 }
