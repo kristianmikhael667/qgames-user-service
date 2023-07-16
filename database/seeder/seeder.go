@@ -16,9 +16,10 @@ func NewSeeder() *seed {
 
 func (s *seed) SeedAll() {
 	// userSeeder(s.DB)
-	roleSeeder(s.DB)
+	// roleSeeder(s.DB)
+	permissionSeeder(s.DB)
 }
 
 func (s *seed) DeleteAll() {
-	s.DB.Exec("DELETE FROM user")
+	s.DB.Exec("DELETE FROM permissions")
 }

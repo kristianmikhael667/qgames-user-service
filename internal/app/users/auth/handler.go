@@ -34,7 +34,9 @@ func (h *handler) RegisterUsers(c echo.Context) error {
 	return response.SuccessResponse(users).Send(c)
 }
 
-func (h *handler) CheckPhone(c echo.Context) error {
+// func (h *handler) LoginUser(c echo.Context)
+
+func (h *handler) RequestOtp(c echo.Context) error {
 	phoneNumber := new(dto.CheckPhoneReqBody)
 	if err := c.Bind(phoneNumber); err != nil {
 		return response.ErrorBuilder(&response.ErrorConstant.NotFound, err).Send(c)
@@ -43,10 +45,9 @@ func (h *handler) CheckPhone(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	checkphone, err := h.service.CheckPhonesLogin(c.Request().Context(), phoneNumber)
+	checkphone, err := h.service.RequestOtp(c.Request().Context(), phoneNumber)
 	if err != nil {
 		return response.ErrorResponse(err).Send(c)
 	}
-	return response.SuccessResponse(checkphone).Send(c)
-
+	return response.CustomSuccessBuilder(201, checkphone, "Waiting OTP Send", nil).Send(c)
 }

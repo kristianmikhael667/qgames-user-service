@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 	dto "main/internal/dto/users_req_res"
 	model "main/internal/model/users"
 	pkgdto "main/package/dto"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -15,6 +17,7 @@ type User interface {
 	Save(ctx context.Context, users *dto.RegisterUsersRequestBody) (model.User, error)
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
+	RequestOtp(ctx context.Context, phone string) (string, error)
 }
 
 type user struct {
@@ -82,19 +85,59 @@ func (r *user) ExistByEmail(ctx context.Context, email *string) (bool, error) {
 }
 
 func (r *user) ExistByPhone(ctx context.Context, numbers string) (bool, error) {
-	replaced := strings.Replace(numbers, "+62", "0", -1)
-	replaced = strings.Replace(replaced, "62", "0", -1)
+	phones := strings.Replace(numbers, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
 
 	var (
 		count   int64
 		isExist bool
 	)
 
-	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", replaced).Count(&count).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", phones).Count(&count).Error; err != nil {
 		return isExist, err
 	}
 	if count > 0 {
 		isExist = true
 	}
 	return isExist, nil
+}
+
+func (r *user) RequestOtp(ctx context.Context, phone string) (string, error) {
+	// var users model.User
+	var trylimit model.Attempt
+
+	phones := strings.Replace(phone, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
+
+	timenow := time.Now()
+	if err := r.Db.WithContext(ctx).Model(&model.Attempt{}).Where("phone = ? ", phones).First(&trylimit).Error; err != nil {
+		// create try limit
+		newAttemp := model.Attempt{
+			Phone:       phones,
+			PinAttempt:  0,
+			OtpAttempt:  0,
+			LastAttempt: timenow,
+		}
+		if err := r.Db.WithContext(ctx).Save(&newAttemp).Error; err != nil {
+			return "Created Attemp", err
+		}
+	}
+
+	curr := timenow.Format("2006-01-02")                  // Format: YYYY-MM-DD
+	lastTest := trylimit.LastAttempt.Format("2006-01-02") // Format: YYYY-MM-DD
+
+	if (trylimit.OtpAttempt >= 3) && (curr == lastTest) {
+		return "Your access is still restricted", errors.New("403")
+	} else if curr != lastTest {
+		trylimit.OtpAttempt = 0
+	}
+
+	// pin := helper.GeneratePin(6)
+	// status_user := false
+
+	// if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phones).First(&users).Error; err != nil {
+	// 	status_user := true
+
+	// }
+	return "ss", nil
 }

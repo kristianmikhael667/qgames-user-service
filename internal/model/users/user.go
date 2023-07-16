@@ -9,13 +9,13 @@ import (
 
 type User struct {
 	ID        int16     `json:"id" gorm:"serial;primaryKey"`
-	UidUser   uuid.UUID `gorm:"type:char(36);not_null;unique" json:"uid_user"`
-	Fullname  string    `json:"fullname" gorm:"varchar;not_null"`
-	Phone     string    `json:"phone" gorm:"varchar;not_null;unique"`
-	Email     string    `json:"email" gorm:"varchar;not_null;unique"`
+	UidUser   uuid.UUID `gorm:"type:char(36);not null;unique" json:"uid_user"`
+	Fullname  string    `json:"fullname" gorm:"varchar"`
+	Phone     string    `json:"phone" gorm:"varchar;not null;unique"`
+	Email     string    `json:"email" gorm:"varchar;unique"`
 	Password  string    `json:"password" gorm:"varchar"`
 	Pin       string    `json:"pin" gorm:"varchar"`
-	Address   string    `json:"address" gorm:"text;not_null"`
+	Address   string    `json:"address" gorm:"text"`
 	Profile   string    `json:"profile" gorm:"varchar"`
 	Status    string    `json:"status" gorm:"varchar"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`

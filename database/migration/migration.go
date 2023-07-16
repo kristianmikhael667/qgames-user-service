@@ -11,12 +11,12 @@ import (
 /* model for migrate and rollback table */
 var tables = []interface{}{
 	&model.Assign{},
-	&model.Attempt{},
-	&model.Common{},
-	&model.Otp{},
-	&model.Permission{},
-	&model.Role{},
-	&model.User{},
+	// &model.Attempt{},
+	// &model.Common{},
+	// &model.Otp{},
+	// &model.Permission{},
+	// &model.Role{},
+	// &model.User{},
 }
 
 func Migrate() {
