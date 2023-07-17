@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"main/helper"
 	dto "main/internal/dto/users_req_res"
 	"main/internal/factory"
 	"main/internal/pkg/util"
@@ -20,6 +21,7 @@ type Service interface {
 	RegisterUsers(ctx context.Context, payload *dto.RegisterUsersRequestBody) (*dto.UserWithJWTResponse, error)
 	CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error)
 	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, bool, error)
+	VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -131,4 +133,40 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 	}
 
 	return "An instruction to verify your phone number has been sent to your phone.", status, nil
+}
+
+func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, error) {
+	var result *dto.UserWithJWTResponse
+
+	// Check Email
+	response, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, validotp.Phone, validotp.Otp)
+	if err != nil {
+		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		return result, msg, err
+	}
+	if verifyOtp == false {
+		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		return result, msg, err
+	}
+
+	claims := util.CreateJWTClaims(response.UidUser.String(), response.Email, response.Phone)
+	token, err := util.CreateJWTToken(claims)
+	if err != nil {
+		return result, msg, err
+	}
+
+	result = &dto.UserWithJWTResponse{
+		UsersResponse: dto.UsersResponse{
+			Uuid:      response.UidUser.String(),
+			Fullname:  response.Fullname,
+			Phone:     response.Phone,
+			Email:     response.Email,
+			Address:   response.Address,
+			Profile:   response.Profile,
+			CreatedAt: response.CreatedAt,
+			UpdatedAt: response.UpdatedAt,
+		},
+		Token: token,
+	}
+	return result, msg, nil
 }

@@ -9,5 +9,4 @@ type Otp struct {
 	ExpiredAt time.Time `json:"expired_at"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoCreateTime" json:"updated_at"`
-	Common
 }

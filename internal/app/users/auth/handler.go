@@ -57,3 +57,20 @@ func (h *handler) RequestOtp(c echo.Context) error {
 	}
 
 }
+
+func (h *handler) VerifyOtp(c echo.Context) error {
+	bodyVerify := new(dto.RequestPhoneOtp)
+	if err := c.Bind(bodyVerify); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.NotFound, err).Send(c)
+	}
+	if err := c.Validate(bodyVerify); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
+	}
+
+	checkverify, msg, err := h.service.VerifyOtp(c.Request().Context(), bodyVerify)
+	if err != nil {
+		return response.ErrorResponse(err).Send(c)
+	}
+
+	return response.CustomSuccessBuilder(201, checkverify, msg, nil).Send(c)
+}

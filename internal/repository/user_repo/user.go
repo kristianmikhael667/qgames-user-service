@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"main/helper"
 	dto "main/internal/dto/users_req_res"
 	model "main/internal/model/users"
@@ -20,7 +21,7 @@ type User interface {
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
 	RequestOtp(ctx context.Context, phone string) (model.User, bool, string, error)
-	// VerifyOtp(ctx context.Context, phone string, otp string) (model.User, error)
+	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 }
 
 type user struct {
@@ -126,8 +127,8 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 		}
 	}
 
-	curr := timenow.Format("2006-01-02")                  // Format: YYYY-MM-DD
-	lastTest := trylimit.LastAttempt.Format("2006-01-02") // Format: YYYY-MM-DD
+	curr := timenow.Format("2006-01-02")
+	lastTest := trylimit.LastAttempt.Format("2006-01-02")
 
 	if (trylimit.OtpAttempt >= 3) && (curr == lastTest) {
 		helper.Logger("error", "Otp already 3 times  : "+string(rune(403)), "Rc: "+string(rune(403)))
@@ -180,14 +181,69 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 			return users, false, "Failed create otp", err
 		}
 	}
+
+	// Call API
+	msg, boolean := helper.SendOtp(phones, otp)
+	if boolean == false {
+		helper.Logger("error", "Failed OTP : "+phones, "400")
+	}
+	helper.Logger("info", msg, "Rc: "+string(rune(201)))
+
 	return users, status_user, "Success create/get users", nil
 }
 
-// func (r *user) VerifyOtp(ctx context.Context, phone string, otp string) (model.User, error){
-// 	// handler user phone
+func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error) {
+	var otp model.Otp
+	var users model.User
 
-// 	// after get real phone user, do it verify otp
+	phones := strings.Replace(phone, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
 
-// 	// Delete otp by user phone
+	var (
+		isExist bool
+	)
 
-// }
+	if err := r.Db.WithContext(ctx).Model(&model.Otp{}).Where("phone = ?", phones).Order("created_at DESC").First(&otp).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return users, isExist, "Phone number is not registered", response.CustomErrorBuilder(403, "Error", "Expired Otp")
+		}
+	}
+
+	// Set 1 minute
+	expiredminute := 1
+
+	currentTime := time.Now()
+	expiredOtp := otp.ExpiredAt
+
+	diff := expiredOtp.Sub(currentTime)
+	minutesPassed := int(diff.Seconds())
+
+	if minutesPassed <= expiredminute {
+		helper.Logger("error", "Expired Otp : "+string(rune(403)), "Rc: "+string(rune(403)))
+		return users, isExist, "Expired Otp", response.CustomErrorBuilder(403, "Error", "Expired Otp")
+	}
+
+	// Get users
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phones).First(&users).Error; err != nil {
+		helper.Logger("error", "Number not found", "Rc: "+string(rune(403)))
+		return users, false, "Number not found", err
+	}
+	// Compare OTP
+	check := helper.VerifyOtp(phones, otps, otp.Otp)
+	if check == false {
+		return model.User{}, false, "Failed verify otp", nil
+	}
+
+	// If success delete otp
+	result := r.Db.Debug().Unscoped().Where("phone = ?", phones).Delete(&model.Otp{})
+	if result.Error != nil {
+		fmt.Println("Error:", result.Error)
+	}
+	// Update User
+	users.Status = "active"
+	if err := r.Db.WithContext(ctx).Save(&users).Error; err != nil {
+		return users, false, "Failed update status user", err
+	}
+
+	return users, isExist, "Success verify OTP", nil
+}

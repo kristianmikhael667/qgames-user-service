@@ -19,6 +19,11 @@ type (
 		Phone string `json:"phone" validate:"omitempty"`
 	}
 
+	RequestPhoneOtp struct {
+		Phone string `json:"phone" validate:"omitempty"`
+		Otp   string `json:"otp" validate:"omitempty"`
+	}
+
 	JWTClaims struct {
 		Uuid  string `json:"uid_user"`
 		Email string `json:"email"`
