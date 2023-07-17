@@ -49,8 +49,26 @@ func permissionSeeder(db *gorm.DB) {
 			UpdatedAt: now,
 		},
 		{
-			Name:      "List Product",
-			Slug:      "list-product",
+			Name:      "List Product Default",
+			Slug:      "list-product-default",
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		{
+			Name:      "List Product Basic",
+			Slug:      "list-product-basic",
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		{
+			Name:      "List Product VIP",
+			Slug:      "list-product-vip",
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		{
+			Name:      "List Product VVIP",
+			Slug:      "list-product-vvip",
 			CreatedAt: now,
 			UpdatedAt: now,
 		},

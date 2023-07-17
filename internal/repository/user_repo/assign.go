@@ -23,7 +23,7 @@ func NewAssign(db *gorm.DB) *assigns {
 
 func (a *assigns) Assign(ctx context.Context, users, role, permission string) error {
 	assign := model.Assign{
-		Users: users, Roles: role, Permissions: permission,
+		Users: users, Roles: role, Permissions: permission, Status: "active",
 	}
 
 	if err := a.Db.WithContext(ctx).Create(&assign).Error; err != nil {

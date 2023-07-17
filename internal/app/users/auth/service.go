@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	dto "main/internal/dto/users_req_res"
 	"main/internal/factory"
 	"main/internal/pkg/util"
@@ -104,44 +103,32 @@ func (s *service) CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequ
 }
 
 func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, bool, error) {
-	// var result *dto.UsersResponse
-
-	isExistPhone, err := s.UserRepository.ExistByPhone(ctx, phone.Phone)
-	if err != nil {
-		return "Error", true, response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
-	}
-	if !isExistPhone {
-		return "Error", true, response.ErrorBuilder(&response.ErrorConstant.NotFound, errors.New("Phone Not Found"))
-	}
-
 	// Request Otp
 	requestOtp, status, _, err := s.UserRepository.RequestOtp(ctx, phone.Phone)
 
 	if err != nil {
-		fmt.Println("error beo")
 		return err.Error(), status, err
 	}
 
-	// Assign Role user-default Permission no-topup-balance
-	err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "20303ce3-a6fe-4463-a5a3-7d5e333c6b69", "86976d39-8829-40e8-ada1-45e390c244da")
+	if status == true {
+		// Assign Role user-default Permission no-topup-balance
+		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "no-topup-balance")
 
-	// Assign Role user-default Permission common-user
-	err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "20303ce3-a6fe-4463-a5a3-7d5e333c6b69", "2ddfdaba-5024-409f-b641-b6424eb8cb8f")
+		// Assign Role user-default Permission common-user
+		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "common-user")
 
-	// Assign Role user-default Permission check-wallet
-	err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "20303ce3-a6fe-4463-a5a3-7d5e333c6b69", "8487b5a5-8f95-4623-ad23-15fdd507f82b")
+		// Assign Role user-default Permission check-wallet
+		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "check-wallet")
 
-	// Assign Role user-default Permission topup-wallet
-	err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "20303ce3-a6fe-4463-a5a3-7d5e333c6b69", "9835a6a5-26aa-4cfc-8cff-ef371ad4ba8b")
+		// Assign Role user-default Permission topup-wallet
+		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "topup-wallet")
 
-	// Assign Role user-default Permission topup-wallet
-	err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "20303ce3-a6fe-4463-a5a3-7d5e333c6b69", "9835a6a5-26aa-4cfc-8cff-ef371ad4ba8b")
+		// Assign Role user-default Permission list-product
+		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "list-product")
 
-	// Assign Role user-default Permission list-product
-	err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "20303ce3-a6fe-4463-a5a3-7d5e333c6b69", "cab88e92-77e6-4744-a1c4-b771c9cda9ef")
-
-	// Assign Role user-default Permission create-trx
-	err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "20303ce3-a6fe-4463-a5a3-7d5e333c6b69", "0287be90-35f5-4d94-b588-34020041d23a")
+		// Assign Role user-default Permission create-trx
+		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "create-trx")
+	}
 
 	return "An instruction to verify your phone number has been sent to your phone.", status, nil
 }

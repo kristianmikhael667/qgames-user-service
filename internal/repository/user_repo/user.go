@@ -20,6 +20,7 @@ type User interface {
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
 	RequestOtp(ctx context.Context, phone string) (model.User, bool, string, error)
+	// VerifyOtp(ctx context.Context, phone string, otp string) (model.User, error)
 }
 
 type user struct {
@@ -140,16 +141,17 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 	status_user := false
 
 	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phones).First(&users).Error; err != nil {
-		status_user := true
+		status_user = true
 
 		newUsers := model.User{
-			Phone: users.Phone,
+			Phone: phones,
 		}
 
 		if err := r.Db.WithContext(ctx).Save(&newUsers).Error; err != nil {
-			return users, false, "Failed create users", err
+			helper.Logger("error", "Failed Create User With Number : "+phones, "400")
 		} else {
-			return users, status_user, "Success create users", nil
+			helper.Logger("info", "Success Create User With Number: "+phones, "Rc: "+string(rune(201)))
+			users.UidUser = newUsers.UidUser
 		}
 	}
 
@@ -170,12 +172,22 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 		return users, false, "Failed create otp", err
 	}
 
-	trylimit.OtpAttempt++
-	trylimit.LastAttempt = time.Now()
+	if status_user == false {
+		trylimit.OtpAttempt++
+		trylimit.LastAttempt = time.Now()
 
-	if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
-		return users, false, "Failed create otp", err
+		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+			return users, false, "Failed create otp", err
+		}
 	}
-
-	return users, status_user, "Success get users", nil
+	return users, status_user, "Success create/get users", nil
 }
+
+// func (r *user) VerifyOtp(ctx context.Context, phone string, otp string) (model.User, error){
+// 	// handler user phone
+
+// 	// after get real phone user, do it verify otp
+
+// 	// Delete otp by user phone
+
+// }
