@@ -25,9 +25,11 @@ type (
 	}
 
 	JWTClaims struct {
-		Uuid  string `json:"uid_user"`
-		Email string `json:"email"`
-		Phone string `json:"phone"`
+		Uuid        string   `json:"uid_user"`
+		Email       string   `json:"email"`
+		Phone       string   `json:"phone"`
+		Roles       string   `json:"roles"`
+		Permissions []string `json:"permissions"`
 		jwt.RegisteredClaims
 	}
 )

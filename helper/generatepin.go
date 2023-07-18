@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -19,8 +18,6 @@ func GeneratePin(digit int) string {
 }
 
 func VerifyOtp(phone, otp, otpHash string) bool {
-	fmt.Println("otp ", otp)
-	fmt.Println("has ", otpHash)
 	err := bcrypt.CompareHashAndPassword([]byte(otpHash), []byte(otp))
 	if err == nil {
 		return true

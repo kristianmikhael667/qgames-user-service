@@ -21,7 +21,7 @@ type Service interface {
 	RegisterUsers(ctx context.Context, payload *dto.RegisterUsersRequestBody) (*dto.UserWithJWTResponse, error)
 	CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error)
 	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, bool, error)
-	VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, error)
+	VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -66,7 +66,7 @@ func (s *service) RegisterUsers(ctx context.Context, payload *dto.RegisterUsersR
 		return result, response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
 	}
 
-	claims := util.CreateJWTClaims(data.UidUser.String(), data.Email, data.Phone)
+	claims := util.CreateJWTClaims(data.UidUser.String(), data.Email, data.Phone, "nil", nil)
 	token, err := util.CreateJWTToken(claims)
 	if err != nil {
 		return result, response.ErrorBuilder(
@@ -135,24 +135,44 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 	return "An instruction to verify your phone number has been sent to your phone.", status, nil
 }
 
-func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, error) {
+func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error) {
 	var result *dto.UserWithJWTResponse
-
 	// Check Email
 	response, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, validotp.Phone, validotp.Otp)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
-		return result, msg, err
+		return result, msg, 403, err
 	}
 	if verifyOtp == false {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
-		return result, msg, err
+		return result, msg, 401, err
 	}
 
-	claims := util.CreateJWTClaims(response.UidUser.String(), response.Email, response.Phone)
+	// Get all assign and loop
+	response_assign, err := s.UserRepository.GetAssignUsers(ctx, response.UidUser.String())
+
+	if err != nil {
+		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+	}
+
+	firstRole := response_assign[0].Roles
+
+	var permissions []string
+	for _, assign := range response_assign {
+		permissions = append(permissions, assign.Permissions)
+	}
+
+	claims := util.CreateJWTClaims(response.UidUser.String(), response.Email, response.Phone, firstRole, permissions)
+
+	// Update Limit
+	statuscode, msg, err := s.UserRepository.UpdateAttemptOtp(ctx, validotp.Phone)
+	if statuscode != 201 {
+		return result, msg, statuscode, err
+	}
+
 	token, err := util.CreateJWTToken(claims)
 	if err != nil {
-		return result, msg, err
+		return result, msg, 401, err
 	}
 
 	result = &dto.UserWithJWTResponse{
@@ -168,5 +188,5 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 		},
 		Token: token,
 	}
-	return result, msg, nil
+	return result, msg, 201, nil
 }

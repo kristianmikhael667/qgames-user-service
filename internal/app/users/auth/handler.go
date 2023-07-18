@@ -67,10 +67,10 @@ func (h *handler) VerifyOtp(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	checkverify, msg, err := h.service.VerifyOtp(c.Request().Context(), bodyVerify)
-	if err != nil {
-		return response.ErrorResponse(err).Send(c)
+	checkverify, msg, sc, _ := h.service.VerifyOtp(c.Request().Context(), bodyVerify)
+	if sc != 201 {
+		return response.CustomErrorBuilder(int(sc), "error", msg).Send(c)
 	}
 
-	return response.CustomSuccessBuilder(201, checkverify, msg, nil).Send(c)
+	return response.CustomSuccessBuilder(int(sc), checkverify, msg, nil).Send(c)
 }

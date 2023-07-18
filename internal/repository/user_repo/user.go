@@ -22,6 +22,8 @@ type User interface {
 	ExistByPhone(ctx context.Context, email string) (bool, error)
 	RequestOtp(ctx context.Context, phone string) (model.User, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
+	GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error)
+	UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error)
 }
 
 type user struct {
@@ -199,13 +201,9 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	phones := strings.Replace(phone, "+62", "0", -1)
 	phones = strings.Replace(phones, "62", "0", -1)
 
-	var (
-		isExist bool
-	)
-
 	if err := r.Db.WithContext(ctx).Model(&model.Otp{}).Where("phone = ?", phones).Order("created_at DESC").First(&otp).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return users, isExist, "Phone number is not registered", response.CustomErrorBuilder(403, "Error", "Expired Otp")
+			return users, false, "Sorry, your OTP has expired", err
 		}
 	}
 
@@ -220,7 +218,7 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 
 	if minutesPassed <= expiredminute {
 		helper.Logger("error", "Expired Otp : "+string(rune(403)), "Rc: "+string(rune(403)))
-		return users, isExist, "Expired Otp", response.CustomErrorBuilder(403, "Error", "Expired Otp")
+		return users, false, "Expired Otp", nil
 	}
 
 	// Get users
@@ -239,11 +237,37 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	if result.Error != nil {
 		fmt.Println("Error:", result.Error)
 	}
+
 	// Update User
 	users.Status = "active"
 	if err := r.Db.WithContext(ctx).Save(&users).Error; err != nil {
 		return users, false, "Failed update status user", err
 	}
 
-	return users, isExist, "Success verify OTP", nil
+	return users, true, "Success verify OTP", nil
+}
+
+func (r *user) GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error) {
+	var assign []model.Assign
+
+	if err := r.Db.WithContext(ctx).Where("users = ? ", uidusers).Find(&assign).Error; err != nil {
+		helper.Logger("error", "Assign Not Found", "Rc: "+string(rune(404)))
+	}
+	return assign, nil
+}
+
+func (r *user) UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error) {
+	var attemp model.Attempt
+
+	phones := strings.Replace(phone, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
+
+	if err := r.Db.WithContext(ctx).Model(&model.Attempt{}).Where("phone = ?", phones).First(&attemp).Error; err != nil {
+		return 404, "Error get phone attemp", err
+	}
+	attemp.OtpAttempt = 0
+	if err := r.Db.WithContext(ctx).Save(&attemp).Error; err != nil {
+		return 403, "Error update phone attemp", err
+	}
+	return 201, "Success update", nil
 }
