@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -24,6 +25,7 @@ type User interface {
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 	GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error)
 	UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error)
+	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 }
 
 type user struct {
@@ -270,4 +272,31 @@ func (r *user) UpdateAttemptOtp(ctx context.Context, phone string) (int16, strin
 		return 403, "Error update phone attemp", err
 	}
 	return 201, "Success update", nil
+}
+
+func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error) {
+	var user model.User
+
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("uid_user = ?", uuid).First(&user).Error; err != nil {
+		return user, 403, "Error get users", err
+	}
+
+	// Check PIN
+	if len(users.Pin) != 6 || !helper.IsNumeric(users.Pin) {
+		return user, 403, "Invalid PIN", nil
+	}
+
+	hashedPin, err := bcrypt.GenerateFromPassword([]byte(users.Pin), bcrypt.DefaultCost)
+	if err != nil {
+		return user, 403, "Failed Generate Pin", err
+	}
+
+	user.Fullname = users.Fullname
+	user.Pin = string(hashedPin)
+
+	if err := r.Db.WithContext(ctx).Save(&user).Error; err != nil {
+		return user, 400, "Failed Update User", err
+	}
+
+	return user, 201, "Success Update User", nil
 }

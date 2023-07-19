@@ -15,6 +15,11 @@ type (
 		Profile  string `json:"profile"`
 	}
 
+	UpdateUsersReqBody struct {
+		Fullname string `json:"fullname" validate:"omitempty"`
+		Pin      string `json:"pin" validate:"omitempty"`
+	}
+
 	CheckPhoneReqBody struct {
 		Phone string `json:"phone" validate:"omitempty"`
 	}

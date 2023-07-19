@@ -4,6 +4,7 @@ import (
 	"main/internal/app/users/auth"
 	"main/internal/app/users/permission"
 	"main/internal/app/users/role"
+	"main/internal/app/users/user"
 	"main/internal/factory"
 	"main/package/util"
 
@@ -18,8 +19,9 @@ func NewHttp(e *echo.Echo, f *factory.Factory) {
 		return c.JSON(200, map[string]string{"status": "OKE"})
 	})
 	v1 := e.Group("/user-service")
-	auth.NewHandler(f).Route(v1.Group("/users"))
+	auth.NewHandler(f).Route(v1.Group("/auth"))
 	role.NewHandler(f).Route(v1.Group("/roles"))
+	user.NewHandler(f).Route(v1.Group("/users"))
 	permission.NewHandler(f).Route(v1.Group("/permission"))
 
 	// v2 := e.Group("/product-service")

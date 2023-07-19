@@ -15,6 +15,7 @@ type service struct {
 
 type Service interface {
 	Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*pkgdto.SearchGetResponse[dto.UsersResponse], error)
+	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -44,4 +45,27 @@ func (s *service) Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*
 	result.PaginationInfo = *info
 
 	return result, nil
+}
+
+func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error) {
+	var result *dto.UsersResponse
+	// Update
+	data, sc, msg, err := s.UserRepository.UpdateAccount(ctx, payloads.Uid, payload)
+
+	if err != nil {
+		return result, sc, msg, err
+	}
+
+	result = &dto.UsersResponse{
+		Uuid:      data.UidUser.String(),
+		Fullname:  data.Fullname,
+		Phone:     data.Phone,
+		Email:     data.Email,
+		Address:   data.Address,
+		Profile:   data.Profile,
+		CreatedAt: data.CreatedAt,
+		UpdatedAt: data.UpdatedAt,
+	}
+
+	return result, sc, msg, nil
 }

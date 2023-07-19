@@ -1,9 +1,11 @@
 package user
 
 import (
+	dto "main/internal/dto/users_req_res"
 	"main/internal/factory"
 	"main/internal/pkg/util"
 	pkgdto "main/package/dto"
+	"main/package/util/response"
 	res "main/package/util/response"
 	"net/http"
 
@@ -42,4 +44,25 @@ func (h *handler) Get(c echo.Context) error {
 	}
 
 	return res.CustomSuccessBuilder(http.StatusOK, result.Data, "Get employees success", &result.PaginationInfo).Send(c)
+}
+
+func (h *handler) UpdateUser(c echo.Context) error {
+	payload := new(dto.UpdateUsersReqBody)
+
+	if err := c.Bind(payload); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.BadRequest, err).Send(c)
+	}
+
+	if err := c.Validate(payload); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
+	}
+
+	uid := c.Param("uid")
+	users, sc, msg, err := h.service.UpdateUsers(c.Request().Context(), &pkgdto.ByUuidUsersRequest{Uid: uid}, payload)
+
+	if err != nil || sc != 201 {
+		return response.CustomErrorBuilder(int(sc), msg, err.Error()).Send(c)
+	}
+
+	return response.CustomSuccessBuilder(int(sc), users, msg, nil).Send(c)
 }
