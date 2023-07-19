@@ -15,8 +15,8 @@ func NewSeeder() *seed {
 }
 
 func (s *seed) SeedAll() {
-	// userSeeder(s.DB)
-	// roleSeeder(s.DB)
+	userSeeder(s.DB)
+	roleSeeder(s.DB)
 	permissionSeeder(s.DB)
 }
 

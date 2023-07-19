@@ -20,6 +20,11 @@ type (
 		Pin      string `json:"pin" validate:"omitempty"`
 	}
 
+	LoginByPin struct {
+		Phone string `json:"phone" validate:"omitempty"`
+		Pin   string `json:"pin" validate:"omitempty"`
+	}
+
 	CheckPhoneReqBody struct {
 		Phone string `json:"phone" validate:"omitempty"`
 	}

@@ -26,6 +26,7 @@ type User interface {
 	GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error)
 	UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
+	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int16, string, error)
 }
 
 type user struct {
@@ -153,6 +154,7 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 		}
 
 		if err := r.Db.WithContext(ctx).Save(&newUsers).Error; err != nil {
+			fmt.Println("error apa ini ", err.Error())
 			helper.Logger("error", "Failed Create User With Number : "+phones, "400")
 		} else {
 			helper.Logger("info", "Success Create User With Number: "+phones, "Rc: "+string(rune(201)))
@@ -299,4 +301,50 @@ func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.Update
 	}
 
 	return user, 201, "Success Update User", nil
+}
+
+func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int16, string, error) {
+	var user model.User
+	var trylimit model.Attempt
+
+	phones := strings.Replace(loginpin.Phone, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
+
+	// Validate Phone Number
+	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&user).Error; err != nil {
+		helper.Logger("error", "Number Phone Not Found Users", "Rc: "+string(rune(404)))
+	}
+
+	// Validate TryLimit
+	timenow := time.Now()
+	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&trylimit).Error; err != nil {
+		// Create Limit
+		newAttemp := model.Attempt{
+			Phone:       phones,
+			PinAttempt:  0,
+			OtpAttempt:  0,
+			LastAttempt: timenow,
+		}
+		if err := r.Db.WithContext(ctx).Save(&newAttemp).Error; err != nil {
+			return user, 403, "Failed create attemp", err
+		}
+	}
+
+	if (!helper.VerifyPin(loginpin.Pin, user.Pin)) && (trylimit.PinAttempt < 3) {
+		helper.Logger("error", "Wrong PIN", "Rc: "+string(rune(403)))
+		trylimit.PinAttempt = trylimit.PinAttempt + 1
+		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+			return user, 403, "Failed update trylimit", err
+		}
+		return user, 403, "Wrong PIN", response.CustomErrorBuilder(403, "Error", "Wrong PIN")
+
+	} else if trylimit.PinAttempt == 3 {
+		return user, 400, "Your access has been restricted, redirecting to PIN verification", response.CustomErrorBuilder(403, "Error", "Your access has been restricted, redirecting to PIN verification")
+	}
+	trylimit.PinAttempt = 0
+	if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+		return user, 403, "Failed update trylimit", err
+	}
+
+	return user, 201, "Success Login By Pin", nil
 }

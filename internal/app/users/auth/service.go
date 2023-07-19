@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"main/helper"
 	dto "main/internal/dto/users_req_res"
 	"main/internal/factory"
@@ -22,6 +23,7 @@ type Service interface {
 	CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error)
 	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, bool, error)
 	VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error)
+	LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int16, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -185,6 +187,53 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 			Profile:   response.Profile,
 			CreatedAt: response.CreatedAt,
 			UpdatedAt: response.UpdatedAt,
+		},
+		Token: token,
+	}
+	return result, msg, 201, nil
+}
+
+func (s *service) LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int16, error) {
+	var result *dto.UserWithJWTResponse
+
+	// Login Pin
+	responses, sc, msg, err := s.UserRepository.LoginByPin(ctx, loginotp)
+
+	if err != nil {
+		return result, msg, sc, err
+	}
+	fmt.Println("ssss ", responses.Phone)
+	// Get all assign and loop
+	response_assign, err := s.UserRepository.GetAssignUsers(ctx, responses.UidUser.String())
+
+	if err != nil {
+		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+	}
+
+	firstRole := response_assign[0].Roles
+
+	var permissions []string
+	for _, assign := range response_assign {
+		permissions = append(permissions, assign.Permissions)
+	}
+
+	claims := util.CreateJWTClaims(responses.UidUser.String(), responses.Email, responses.Phone, firstRole, permissions)
+
+	token, err := util.CreateJWTToken(claims)
+	if err != nil {
+		return result, msg, 401, err
+	}
+
+	result = &dto.UserWithJWTResponse{
+		UsersResponse: dto.UsersResponse{
+			Uuid:      responses.UidUser.String(),
+			Fullname:  responses.Fullname,
+			Phone:     responses.Phone,
+			Email:     responses.Email,
+			Address:   responses.Address,
+			Profile:   responses.Profile,
+			CreatedAt: responses.CreatedAt,
+			UpdatedAt: responses.UpdatedAt,
 		},
 		Token: token,
 	}

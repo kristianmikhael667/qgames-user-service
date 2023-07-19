@@ -74,3 +74,24 @@ func (h *handler) VerifyOtp(c echo.Context) error {
 
 	return response.CustomSuccessBuilder(int(sc), checkverify, msg, nil).Send(c)
 }
+
+func (h *handler) LoginPin(c echo.Context) error {
+	payloads := new(dto.LoginByPin)
+	if err := c.Bind(payloads); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.NotFound, err).Send(c)
+	}
+	if err := c.Validate(payloads); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
+	}
+
+	result, msg, sc, err := h.service.LoginPin(c.Request().Context(), payloads)
+	if err != nil {
+		return response.ErrorResponse(err).Send(c)
+	}
+
+	if sc != 201 {
+		return response.CustomErrorBuilder(int(sc), err.Error(), msg).Send(c)
+	} else {
+		return response.CustomSuccessBuilder(int(sc), result, msg, nil).Send(c)
+	}
+}

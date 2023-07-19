@@ -9,4 +9,5 @@ func (h *handler) Route(g *echo.Group) {
 	g.POST("/signup-users", h.RegisterUsers)
 	g.POST("/request-otp", h.RequestOtp)
 	g.POST("/verify-otp", h.VerifyOtp)
+	g.POST("/loginbypin", h.LoginPin)
 }

@@ -12,7 +12,7 @@ type User struct {
 	UidUser   uuid.UUID `gorm:"type:char(36);not null;unique" json:"uid_user"`
 	Fullname  string    `json:"fullname" gorm:"varchar"`
 	Phone     string    `json:"phone" gorm:"varchar;not null;unique"`
-	Email     string    `json:"email" gorm:"varchar;unique"`
+	Email     string    `json:"email" gorm:"varchar"`
 	Password  string    `json:"password" gorm:"varchar"`
 	Pin       string    `json:"pin" gorm:"varchar"`
 	Address   string    `json:"address" gorm:"text"`

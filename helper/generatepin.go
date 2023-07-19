@@ -25,6 +25,14 @@ func VerifyOtp(phone, otp, otpHash string) bool {
 	return false
 }
 
+func VerifyPin(pin, pinHash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(pinHash), []byte(pin))
+	if err == nil {
+		return true
+	}
+	return false
+}
+
 func IsNumeric(s string) bool {
 	for _, r := range s {
 		if r < '0' || r > '9' {
