@@ -18,11 +18,11 @@ func NewHttp(e *echo.Echo, f *factory.Factory) {
 	e.GET("/status", func(c echo.Context) error {
 		return c.JSON(200, map[string]string{"status": "OKE"})
 	})
-	v1 := e.Group("/user-service")
-	auth.NewHandler(f).Route(v1.Group("/auth"))
-	role.NewHandler(f).Route(v1.Group("/roles"))
-	user.NewHandler(f).Route(v1.Group("/users"))
-	permission.NewHandler(f).Route(v1.Group("/permission"))
+	v1 := e.Group("/")
+	auth.NewHandler(f).Route(v1.Group("user-service"))
+	role.NewHandler(f).Route(v1.Group("user-service"))
+	user.NewHandler(f).Route(v1.Group("user-service"))
+	permission.NewHandler(f).Route(v1.Group("user-service"))
 
 	// v2 := e.Group("/product-service")
 
