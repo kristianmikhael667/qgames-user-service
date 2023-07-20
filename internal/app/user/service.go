@@ -2,9 +2,9 @@ package user
 
 import (
 	"context"
-	dto "main/internal/dto/users_req_res"
+	dto "main/internal/dto"
 	"main/internal/factory"
-	repository "main/internal/repository/user_repo"
+	repository "main/internal/repository"
 	pkgdto "main/package/dto"
 	res "main/package/util/response"
 )

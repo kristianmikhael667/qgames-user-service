@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	dto "main/internal/dto/users_req_res"
-	model "main/internal/model/users"
+	dto "main/internal/dto"
+	model "main/internal/model"
 
 	"gorm.io/gorm"
 )

@@ -2,7 +2,7 @@ package seeder
 
 import (
 	"log"
-	model "main/internal/model/users"
+	model "main/internal/model"
 	"time"
 
 	"gorm.io/gorm"

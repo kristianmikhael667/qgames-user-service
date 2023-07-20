@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	model "main/internal/model/users"
+	model "main/internal/model"
 
 	"gorm.io/gorm"
 )

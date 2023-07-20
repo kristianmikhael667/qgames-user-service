@@ -3,9 +3,9 @@ package role
 import (
 	"context"
 	"errors"
-	dto "main/internal/dto/users_req_res"
+	dto "main/internal/dto"
 	"main/internal/factory"
-	repository "main/internal/repository/user_repo"
+	repository "main/internal/repository"
 	"main/package/util/response"
 )
 

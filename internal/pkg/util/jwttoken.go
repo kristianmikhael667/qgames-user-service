@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	dto "main/internal/dto/users_req_res"
+	dto "main/internal/dto"
 	"main/package/util"
 
 	"github.com/golang-jwt/jwt/v4"

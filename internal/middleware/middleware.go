@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	dto "main/internal/dto/users_req_res"
+	dto "main/internal/dto"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

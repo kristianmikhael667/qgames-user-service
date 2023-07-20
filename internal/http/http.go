@@ -1,10 +1,10 @@
 package http
 
 import (
-	"main/internal/app/users/auth"
-	"main/internal/app/users/permission"
-	"main/internal/app/users/role"
-	"main/internal/app/users/user"
+	"main/internal/app/auth"
+	"main/internal/app/permission"
+	"main/internal/app/role"
+	"main/internal/app/user"
 	"main/internal/factory"
 	"main/package/util"
 

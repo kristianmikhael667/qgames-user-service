@@ -1,7 +1,7 @@
 package user
 
 import (
-	dto "main/internal/dto/users_req_res"
+	dto "main/internal/dto"
 	"main/internal/factory"
 	"main/internal/pkg/util"
 	pkgdto "main/package/dto"

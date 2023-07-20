@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"main/helper"
-	dto "main/internal/dto/users_req_res"
+	dto "main/internal/dto"
 	"main/internal/factory"
 	"main/internal/pkg/util"
-	repository "main/internal/repository/user_repo"
+	repository "main/internal/repository"
 	pkgutil "main/package/util"
 	"main/package/util/response"
 )
