@@ -24,6 +24,7 @@ type Service interface {
 	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, bool, error)
 	VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error)
 	LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int16, error)
+	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*dto.UserWithJWTResponse, string, int, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -68,7 +69,7 @@ func (s *service) RegisterUsers(ctx context.Context, payload *dto.RegisterUsersR
 		return result, response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
 	}
 
-	claims := util.CreateJWTClaims(data.UidUser.String(), data.Email, data.Phone, "nil", nil)
+	claims := util.CreateJWTClaims(data.UidUser.String(), data.Email, data.Phone, "nil", nil, false)
 	token, err := util.CreateJWTToken(claims)
 	if err != nil {
 		return result, response.ErrorBuilder(
@@ -164,7 +165,7 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 		permissions = append(permissions, assign.Permissions)
 	}
 
-	claims := util.CreateJWTClaims(response.UidUser.String(), response.Email, response.Phone, firstRole, permissions)
+	claims := util.CreateJWTClaims(response.UidUser.String(), response.Email, response.Phone, firstRole, permissions, false)
 
 	// Update Limit
 	statuscode, msg, err := s.UserRepository.UpdateAttemptOtp(ctx, validotp.Phone)
@@ -217,7 +218,7 @@ func (s *service) LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.
 		permissions = append(permissions, assign.Permissions)
 	}
 
-	claims := util.CreateJWTClaims(responses.UidUser.String(), responses.Email, responses.Phone, firstRole, permissions)
+	claims := util.CreateJWTClaims(responses.UidUser.String(), responses.Email, responses.Phone, firstRole, permissions, false)
 
 	token, err := util.CreateJWTToken(claims)
 	if err != nil {
@@ -238,4 +239,38 @@ func (s *service) LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.
 		Token: token,
 	}
 	return result, msg, 201, nil
+}
+
+func (s *service) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*dto.UserWithJWTResponse, string, int, error) {
+	var result *dto.UserWithJWTResponse
+
+	// Login Admin
+	responses, sc, msg, err := s.UserRepository.LoginAdmin(ctx, loginadmin)
+
+	if err != nil {
+		return result, msg, sc, err
+	}
+
+	claims := util.CreateJWTClaims(responses.UidUser.String(), responses.Email, responses.Phone, "nil", nil, true)
+
+	token, err := util.CreateJWTToken(claims)
+	if err != nil {
+		return result, msg, 401, err
+	}
+
+	result = &dto.UserWithJWTResponse{
+		UsersResponse: dto.UsersResponse{
+			Uuid:      responses.UidUser.String(),
+			Fullname:  responses.Fullname,
+			Phone:     responses.Phone,
+			Email:     responses.Email,
+			Address:   responses.Address,
+			Profile:   responses.Profile,
+			CreatedAt: responses.CreatedAt,
+			UpdatedAt: responses.UpdatedAt,
+		},
+		Token: token,
+		Admin: true,
+	}
+	return result, msg, sc, nil
 }

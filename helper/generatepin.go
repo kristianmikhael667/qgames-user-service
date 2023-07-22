@@ -33,6 +33,14 @@ func VerifyPin(pin, pinHash string) bool {
 	return false
 }
 
+func VerifyPassword(password, passwordHash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
+	if err == nil {
+		return true
+	}
+	return false
+}
+
 func IsNumeric(s string) bool {
 	for _, r := range s {
 		if r < '0' || r > '9' {

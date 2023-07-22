@@ -17,6 +17,7 @@ type (
 	UserWithJWTResponse struct {
 		UsersResponse
 		Token string `json:"token"`
+		Admin bool   `json:"admin"`
 	}
 
 	UserWithCUDResponse struct {

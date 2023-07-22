@@ -95,3 +95,24 @@ func (h *handler) LoginPin(c echo.Context) error {
 		return response.CustomSuccessBuilder(int(sc), result, msg, nil).Send(c)
 	}
 }
+
+func (h *handler) LoginAdmin(c echo.Context) error {
+	payloads := new(dto.LoginAdmin)
+	if err := c.Bind(payloads); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.NotFound, err).Send(c)
+	}
+	if err := c.Validate(payloads); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
+	}
+
+	result, msg, sc, err := h.service.LoginAdmin(c.Request().Context(), payloads)
+	if err != nil {
+		return response.CustomErrorBuilder(sc, msg, msg).Send(c)
+	}
+
+	if sc != 201 {
+		return response.CustomErrorBuilder(sc, msg, msg).Send(c)
+	} else {
+		return response.CustomSuccessBuilder(sc, result, msg, nil).Send(c)
+	}
+}

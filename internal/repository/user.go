@@ -27,6 +27,7 @@ type User interface {
 	UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int16, string, error)
+	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error)
 }
 
 type user struct {
@@ -313,6 +314,7 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 	// Validate Phone Number
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&user).Error; err != nil {
 		helper.Logger("error", "Number Phone Not Found Users", "Rc: "+string(rune(404)))
+		return user, 404, "Number Phone Not Found Users", err
 	}
 
 	// Validate TryLimit
@@ -347,4 +349,20 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 	}
 
 	return user, 201, "Success Login By Pin", nil
+}
+
+func (r *user) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error) {
+	var user model.User
+
+	// Check email
+	fmt.Println("kok sala ? ", loginadmin.Email)
+	if err := r.Db.WithContext(ctx).Where("email = ?", loginadmin.Email).First(&user).Error; err != nil {
+		helper.Logger("error", "Email Not Found", "Rc: "+string(rune(404)))
+		return user, 404, "Email not found", err
+	} else if !helper.VerifyPassword(loginadmin.Password, user.Password) {
+		helper.Logger("error", "Password is wrong", "Rc: "+string(rune(404)))
+		return user, 404, "Password not found", err
+	} else {
+		return user, 201, "Success Login Admin", nil
+	}
 }

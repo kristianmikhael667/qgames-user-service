@@ -25,6 +25,11 @@ type (
 		Pin   string `json:"pin" validate:"omitempty"`
 	}
 
+	LoginAdmin struct {
+		Email    string `json:"email" validate:"omitempty,email"`
+		Password string `json:"password" validate:"omitempty"`
+	}
+
 	CheckPhoneReqBody struct {
 		Phone string `json:"phone" validate:"omitempty"`
 	}
@@ -40,6 +45,7 @@ type (
 		Phone       string   `json:"phone"`
 		Roles       string   `json:"roles"`
 		Permissions []string `json:"permissions"`
+		Admin       bool     `json:"admin"`
 		jwt.RegisteredClaims
 	}
 )
