@@ -28,6 +28,7 @@ type User interface {
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int16, string, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error)
+	MyAccount(ctx context.Context, iduser string) (model.User, int16, string, error)
 }
 
 type user struct {
@@ -190,12 +191,13 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 	}
 
 	// Call API
-	msg, boolean := helper.SendOtp(phones, otp)
-	if boolean == false {
-		helper.Logger("error", "Failed OTP : "+phones, "400")
+	if status_user == true { //buat sementara
+		msg, boolean := helper.SendOtp(phones, otp)
+		if boolean == false {
+			helper.Logger("error", "Failed OTP : "+phones, "400")
+		}
+		helper.Logger("info", msg, "Rc: "+string(rune(201)))
 	}
-	helper.Logger("info", msg, "Rc: "+string(rune(201)))
-
 	return users, status_user, "Success create/get users", nil
 }
 
@@ -295,6 +297,8 @@ func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.Update
 	}
 
 	user.Fullname = users.Fullname
+	user.Email = users.Email
+	user.Address = users.Address
 	user.Pin = string(hashedPin)
 
 	if err := r.Db.WithContext(ctx).Save(&user).Error; err != nil {
@@ -353,9 +357,7 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 
 func (r *user) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error) {
 	var user model.User
-
 	// Check email
-	fmt.Println("kok sala ? ", loginadmin.Email)
 	if err := r.Db.WithContext(ctx).Where("email = ?", loginadmin.Email).First(&user).Error; err != nil {
 		helper.Logger("error", "Email Not Found", "Rc: "+string(rune(404)))
 		return user, 404, "Email not found", err
@@ -365,4 +367,15 @@ func (r *user) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (mode
 	} else {
 		return user, 201, "Success Login Admin", nil
 	}
+}
+
+func (r *user) MyAccount(ctx context.Context, iduser string) (model.User, int16, string, error) {
+	var user model.User
+
+	if err := r.Db.WithContext(ctx).Where("uid_user = ? ", iduser).Find(&user).Error; err != nil {
+		helper.Logger("error", "Assign Not Found", "Rc: "+string(rune(404)))
+		return user, 404, "User Not Found", nil
+
+	}
+	return user, 200, "Get User " + user.Fullname, nil
 }

@@ -17,6 +17,8 @@ type (
 
 	UpdateUsersReqBody struct {
 		Fullname string `json:"fullname" validate:"omitempty"`
+		Email    string `json:"email" validate:"omitempty"`
+		Address  string `json:"address" validate:"omitempty"`
 		Pin      string `json:"pin" validate:"omitempty"`
 	}
 

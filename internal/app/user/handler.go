@@ -72,3 +72,18 @@ func (h *handler) UpdateUser(c echo.Context) error {
 
 	return response.CustomSuccessBuilder(int(sc), users, msg, nil).Send(c)
 }
+
+func (h *handler) MyAccount(c echo.Context) error {
+	authHeader := c.Request().Header.Get("Authorization")
+	token, err := util.ParseJWTToken(authHeader)
+	if err != nil {
+		return res.ErrorBuilder(&res.ErrorConstant.Unauthorized, err).Send(c)
+	}
+
+	result, sc, msg, err := h.service.GetUserDetail(c.Request().Context(), token.Roles, token.Uuid)
+	if err != nil {
+		return res.ErrorResponse(err).Send(c)
+	}
+
+	return res.CustomSuccessBuilder(int(sc), result.Data, msg, nil).Send(c)
+}

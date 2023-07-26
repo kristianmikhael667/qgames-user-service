@@ -14,6 +14,11 @@ type (
 		UpdatedAt time.Time `json:"updated_at"`
 	}
 
+	UserResponseAll struct {
+		Data  UsersResponse `json:"data"`
+		Roles string        `json:"roles"`
+	}
+
 	UserWithJWTResponse struct {
 		UsersResponse
 		Token string `json:"token"`
