@@ -191,13 +191,12 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 	}
 
 	// Call API
-	if status_user == true { //buat sementara
-		msg, boolean := helper.SendOtp(phones, otp)
-		if boolean == false {
-			helper.Logger("error", "Failed OTP : "+phones, "400")
-		}
-		helper.Logger("info", msg, "Rc: "+string(rune(201)))
+	msg, boolean := helper.SendOtp(phones, otp)
+	if boolean == false {
+		helper.Logger("error", "Failed OTP : "+phones, "400")
 	}
+	helper.Logger("info", msg, "Rc: "+string(rune(201)))
+
 	return users, status_user, "Success create/get users", nil
 }
 
