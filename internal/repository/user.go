@@ -213,8 +213,8 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 		}
 	}
 
-	// Set 1 minute
-	expiredminute := 1
+	// Set 2 minute
+	expiredminute := 2
 
 	currentTime := time.Now()
 	expiredOtp := otp.ExpiredAt
