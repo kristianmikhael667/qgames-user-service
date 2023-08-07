@@ -1,9 +1,12 @@
 package auth
 
 import (
+	"fmt"
 	dto "main/internal/dto"
 	"main/internal/factory"
+	"main/internal/pkg/util"
 	"main/package/util/response"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -44,8 +47,12 @@ func (h *handler) RequestOtp(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
+	fmt.Println("user id ", phoneNumber.Phone)
+	fmt.Println("dev ", phoneNumber.DeviceId)
+
 	checkphone, sc, status, err := h.service.RequestOtp(c.Request().Context(), phoneNumber)
 	if err != nil {
+		fmt.Println("sc ? ", sc, " ", checkphone)
 		return response.ErrorResponse(err).Send(c)
 	}
 
@@ -54,9 +61,11 @@ func (h *handler) RequestOtp(c echo.Context) error {
 	}
 
 	if sc == 201 && status == true {
-		return response.CustomSuccessBuilder(201, checkphone, "New User", nil).Send(c)
+		return response.CustomSuccessBuilder(sc, checkphone, "New User", nil).Send(c)
+	} else if sc == 200 && status == false {
+		return response.CustomSuccessBuilder(sc, checkphone, "Old users", nil).Send(c)
 	} else {
-		return response.CustomSuccessBuilder(200, checkphone, "Old users", nil).Send(c)
+		return response.CustomSuccessBuilder(sc, checkphone, "Old users", nil).Send(c)
 	}
 
 }
@@ -118,4 +127,15 @@ func (h *handler) LoginAdmin(c echo.Context) error {
 	} else {
 		return response.CustomSuccessBuilder(sc, result, msg, nil).Send(c)
 	}
+}
+
+func (h *handler) RevokeToken(c echo.Context) error {
+	var blacklistMap = make(map[string]time.Time)
+	authHeader := c.Request().Header.Get("Authorization")
+	token, _ := util.ParseJWTToken(authHeader)
+
+	blacklistMap[token.ExpiresAt.String()] = time.Now()
+
+	return response.CustomSuccessBuilder(201, "Success Logout", "Revoke Token", nil).Send(c)
+
 }

@@ -191,13 +191,11 @@ func (r *user) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (mo
 		}
 	}
 
-	//tapi kalo beda device id nya arahkan ke otp 200
-	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ? AND device_id = ?", users.UidUser, phone.DeviceId).First(&sessions).Error; err != nil {
-		// Mencegah user login diperangkat lain
-		if sessions.DeviceId != phone.DeviceId {
-			return users, 403, status_user, "Device already login in other device", nil
-		}
-		// Create sesssion
+	// Sebelum create otp handle dlu sessionnya
+	// Jika user id dan device id gk ketemu maka akan minta otp
+
+	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", users.UidUser).First(&sessions).Error; err != nil {
+		// Create sesssion for new user
 		newSession := model.Session{
 			UserId:    users.UidUser.String(),
 			DeviceId:  phone.DeviceId,
@@ -213,11 +211,44 @@ func (r *user) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (mo
 			return users, sc, false, msg, err
 		}
 		helper.Logger("info", msg, "Rc: "+string(rune(201)))
-		return users, 200, status_user, "An instruction to verify your phone number has been sent to your phone.", nil
+		return users, 201, status_user, "An instruction to verify your phone number has been sent to your phone.", nil
 	}
 
-	// else device id nya ada maka ke pin aja code 202,
-	return users, 202, status_user, "Users Valid", nil
+	// User not complate until otp masih user baru code 201, maka will masukan nomor call otp karna status nya harus aktive
+	fmt.Println("ssss ", users.Status)
+	if users.Status != "active" {
+		// Call API Untuk Session baru
+		msg, sc := helper.SendOtp(phones, otp)
+		if sc != 200 && sc != 201 {
+			helper.Logger("error", msg, "400")
+			return users, sc, false, msg, nil
+		}
+		helper.Logger("info", msg, "Rc: "+string(rune(201)))
+		return users, 201, status_user, "Uncomplate otp regiter", nil
+	} else if users.Fullname == "" && users.Pin == "" && users.Email == "" && users.Address == "" {
+		trylimit.OtpAttempt = 0
+		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+			return users, 500, false, "Failed create otp", err
+		}
+		// user not complate regist, ketika input nomor lagi, maka akan diarahkan ke page regist code 205 Reset Content
+		return users, 205, status_user, "Uncomplate register users, please full regist", nil
+	}
+
+	// Already Device
+	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("device_id = ?", phone.DeviceId).First(&sessions).Error; err != nil {
+		// OTP Not Plus if not call otp
+		trylimit.OtpAttempt = 0
+		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+			return users, 500, false, "Failed create otp", err
+		}
+		return users, 403, status_user, "Device Already Login", nil
+	}
+	// OTP Not Plus if not call otp
+	trylimit.OtpAttempt = 0
+	if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+		return users, 500, false, "Failed create otp", err
+	}
+	return users, 200, status_user, "Users valid with pin", nil
 }
 
 func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error) {
