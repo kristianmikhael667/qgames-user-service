@@ -21,7 +21,7 @@ type User interface {
 	Save(ctx context.Context, users *dto.RegisterUsersRequestBody) (model.User, error)
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
-	RequestOtp(ctx context.Context, phone string) (model.User, bool, string, error)
+	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (model.User, int, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 	GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error)
 	UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error)
@@ -113,11 +113,12 @@ func (r *user) ExistByPhone(ctx context.Context, numbers string) (bool, error) {
 	return isExist, nil
 }
 
-func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, string, error) {
+func (r *user) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (model.User, int, bool, string, error) {
 	var users model.User
 	var trylimit model.Attempt
+	var sessions model.Session
 
-	phones := strings.Replace(phone, "+62", "0", -1)
+	phones := strings.Replace(phone.Phone, "+62", "0", -1)
 	phones = strings.Replace(phones, "62", "0", -1)
 
 	timenow := time.Now()
@@ -130,7 +131,7 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 			LastAttempt: timenow,
 		}
 		if err := r.Db.WithContext(ctx).Save(&newAttemp).Error; err != nil {
-			return users, false, "Failed create attemp", err
+			return users, 500, false, "Failed create attemp", err
 		}
 	}
 
@@ -138,8 +139,8 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 	lastTest := trylimit.LastAttempt.Format("2006-01-02")
 
 	if (trylimit.OtpAttempt >= 3) && (curr == lastTest) {
-		helper.Logger("error", "Otp already 3 times  : "+string(rune(403)), "Rc: "+string(rune(403)))
-		return users, false, "Otp already 3 times", response.CustomErrorBuilder(403, "Error", "Otp already 3 times")
+		helper.Logger("error", "Otp already 3 times  : "+string(rune(400)), "Rc: "+string(rune(400)))
+		return users, 400, false, "Otp already 3 times", response.CustomErrorBuilder(400, "Error", "Otp already 3 times")
 
 	} else if curr != lastTest {
 		trylimit.OtpAttempt = 0
@@ -169,7 +170,7 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 
 	hashedOtp, err := pkgutil.HashPassword(otp)
 	if err != nil {
-		return users, status_user, "Error Hash OTP", response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
+		return users, 500, status_user, "Error Hash OTP", response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
 	}
 
 	newOtp := model.Otp{
@@ -178,7 +179,7 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 		ExpiredAt: time.Now().Add(1 * time.Minute),
 	}
 	if err := r.Db.WithContext(ctx).Save(&newOtp).Error; err != nil {
-		return users, false, "Failed create otp", err
+		return users, 500, false, "Failed create otp", err
 	}
 
 	if status_user == false {
@@ -186,18 +187,37 @@ func (r *user) RequestOtp(ctx context.Context, phone string) (model.User, bool, 
 		trylimit.LastAttempt = time.Now()
 
 		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
-			return users, false, "Failed create otp", err
+			return users, 500, false, "Failed create otp", err
 		}
 	}
 
-	// Call API
-	msg, boolean := helper.SendOtp(phones, otp)
-	if boolean == false {
-		helper.Logger("error", "Failed OTP : "+phones, "400")
+	//tapi kalo beda device id nya arahkan ke otp 200
+	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ? AND device_id = ?", users.UidUser, phone.DeviceId).First(&sessions).Error; err != nil {
+		// Mencegah user login diperangkat lain
+		if sessions.DeviceId != phone.DeviceId {
+			return users, 403, status_user, "Device already login in other device", nil
+		}
+		// Create sesssion
+		newSession := model.Session{
+			UserId:    users.UidUser.String(),
+			DeviceId:  phone.DeviceId,
+			LoginInAt: time.Now(),
+		}
+		if err := r.Db.WithContext(ctx).Save(&newSession).Error; err != nil {
+			return users, 500, false, "Failed create session", err
+		}
+		// Call API Untuk Session baru
+		msg, sc := helper.SendOtp(phones, otp)
+		if sc != 200 && sc != 201 {
+			helper.Logger("error", msg, "400")
+			return users, sc, false, msg, err
+		}
+		helper.Logger("info", msg, "Rc: "+string(rune(201)))
+		return users, 200, status_user, "An instruction to verify your phone number has been sent to your phone.", nil
 	}
-	helper.Logger("info", msg, "Rc: "+string(rune(201)))
 
-	return users, status_user, "Success create/get users", nil
+	// else device id nya ada maka ke pin aja code 202,
+	return users, 202, status_user, "Users Valid", nil
 }
 
 func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error) {

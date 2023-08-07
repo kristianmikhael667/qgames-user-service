@@ -11,7 +11,7 @@ type User struct {
 	ID        int16     `json:"id" gorm:"serial;primaryKey"`
 	UidUser   uuid.UUID `gorm:"type:char(36);not null;unique" json:"uid_user"`
 	Fullname  string    `json:"fullname" gorm:"varchar"`
-	Phone     string    `json:"phone" gorm:"varchar;not null;unique"`
+	Phone     string    `json:"phone" gorm:"varchar;not_null;unique"`
 	Email     string    `json:"email" gorm:"varchar"`
 	Password  string    `json:"password" gorm:"varchar"`
 	Pin       string    `json:"pin" gorm:"varchar"`

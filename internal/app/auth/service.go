@@ -21,7 +21,7 @@ type service struct {
 type Service interface {
 	RegisterUsers(ctx context.Context, payload *dto.RegisterUsersRequestBody) (*dto.UserWithJWTResponse, error)
 	CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error)
-	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, bool, error)
+	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, int, bool, error)
 	VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error)
 	LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int16, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*dto.UserWithJWTResponse, string, int, error)
@@ -107,35 +107,23 @@ func (s *service) CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequ
 	return false, err
 }
 
-func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, bool, error) {
+func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, int, bool, error) {
 	// Request Otp
-	requestOtp, status, _, err := s.UserRepository.RequestOtp(ctx, phone.Phone)
+	requestOtp, sc, status, msg, err := s.UserRepository.RequestOtp(ctx, phone)
 
 	if err != nil {
-		return err.Error(), status, err
+		return err.Error(), sc, status, err
 	}
 
 	if status == true {
-		// Assign Role user-default Permission no-topup-balance
-		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "no-topup-balance")
-
-		// Assign Role user-default Permission common-user
-		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "common-user")
-
-		// Assign Role user-default Permission check-wallet
-		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "check-wallet")
-
-		// Assign Role user-default Permission topup-wallet
-		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "topup-wallet")
-
-		// Assign Role user-default Permission list-product
-		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "list-product")
-
-		// Assign Role user-default Permission create-trx
-		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "create-trx")
+		// Assign Role user-default and Permission
+		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "common-user,no-topup-balance,check-wallet,topup-wallet,list-product,create-trx")
+		if err != nil {
+			return "error assign", sc, status, err
+		}
 	}
 
-	return "An instruction to verify your phone number has been sent to your phone.", status, nil
+	return msg, sc, status, nil
 }
 
 func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error) {

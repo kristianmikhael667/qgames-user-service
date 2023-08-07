@@ -17,6 +17,7 @@ var tables = []interface{}{
 	&model.Permission{},
 	&model.Role{},
 	&model.User{},
+	&model.Session{},
 }
 
 func Migrate() {

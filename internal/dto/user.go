@@ -12,13 +12,8 @@ type (
 		Profile   string    `json:"profile"`
 		CreatedAt time.Time `json:"created_at"`
 		UpdatedAt time.Time `json:"updated_at"`
+		Roles     string    `json:"roles"`
 	}
-
-	UserResponseAll struct {
-		Data  UsersResponse `json:"data"`
-		Roles string        `json:"roles"`
-	}
-
 	UserWithJWTResponse struct {
 		UsersResponse
 		Token string `json:"token"`

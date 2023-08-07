@@ -8,6 +8,7 @@ import (
 	"main/package/util/response"
 	res "main/package/util/response"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -24,26 +25,31 @@ func NewHandler(f *factory.Factory) *handler {
 
 func (h *handler) Get(c echo.Context) error {
 	authHeader := c.Request().Header.Get("Authorization")
-	_, err := util.ParseJWTToken(authHeader)
+	token, err := util.ParseJWTToken(authHeader)
+
 	if err != nil {
 		return res.ErrorBuilder(&res.ErrorConstant.Unauthorized, err).Send(c)
 	}
 
-	payload := new(pkgdto.SearchGetRequest)
-	if err := c.Bind(payload); err != nil {
-		return res.ErrorBuilder(&res.ErrorConstant.BadRequest, err).Send(c)
-	}
+	if token.Admin {
+		payload := new(pkgdto.SearchGetRequest)
+		if err := c.Bind(payload); err != nil {
+			return res.ErrorBuilder(&res.ErrorConstant.BadRequest, err).Send(c)
+		}
 
-	if err := c.Validate(payload); err != nil {
-		return res.ErrorBuilder(&res.ErrorConstant.Validation, err).Send(c)
-	}
+		if err := c.Validate(payload); err != nil {
+			return res.ErrorBuilder(&res.ErrorConstant.Validation, err).Send(c)
+		}
 
-	result, err := h.service.Find(c.Request().Context(), payload)
-	if err != nil {
-		return res.ErrorResponse(err).Send(c)
-	}
+		result, err := h.service.Find(c.Request().Context(), payload)
+		if err != nil {
+			return res.ErrorResponse(err).Send(c)
+		}
 
-	return res.CustomSuccessBuilder(http.StatusOK, result.Data, "Get employees success", &result.PaginationInfo).Send(c)
+		return res.CustomSuccessBuilder(http.StatusOK, result.Data, "Get users success", &result.PaginationInfo).Send(c)
+
+	}
+	return res.CustomErrorBuilder(403, "Forbidden", "Token not allowed to access").Send(c)
 }
 
 func (h *handler) UpdateUser(c echo.Context) error {
@@ -80,10 +86,16 @@ func (h *handler) MyAccount(c echo.Context) error {
 		return res.ErrorBuilder(&res.ErrorConstant.Unauthorized, err).Send(c)
 	}
 
-	result, sc, msg, err := h.service.GetUserDetail(c.Request().Context(), token.Roles, token.Uuid)
-	if err != nil {
-		return res.ErrorResponse(err).Send(c)
-	}
+	for _, permission := range token.Permissions {
+		hasCommonUser := strings.Contains(permission, "common-user")
+		if hasCommonUser {
+			result, sc, msg, err := h.service.GetUserDetail(c.Request().Context(), token.Roles, token.Uuid)
+			if err != nil {
+				return res.ErrorResponse(err).Send(c)
+			}
 
-	return res.CustomSuccessBuilder(int(sc), result.Data, msg, nil).Send(c)
+			return res.CustomSuccessBuilder(int(sc), result, msg, nil).Send(c)
+		}
+	}
+	return res.CustomErrorBuilder(403, "Forbidden", "Token not allowed to access").Send(c)
 }

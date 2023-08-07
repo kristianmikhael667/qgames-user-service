@@ -6,39 +6,40 @@ import (
 
 type (
 	RegisterUsersRequestBody struct {
-		Fullname string `json:"fullname" validate:"omitempty"`
-		Phone    string `json:"phone" validate:"omitempty"`
-		Email    string `json:"email" validate:"omitempty,email"`
-		Password string `json:"password" validate:"omitempty"`
-		Pin      string `json:"pin" validate:"omitempty"`
-		Address  string `json:"address" validate:"omitempty"`
+		Fullname string `json:"fullname" validate:"required"`
+		Phone    string `json:"phone" validate:"required"`
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required"`
+		Pin      string `json:"pin" validate:"required"`
+		Address  string `json:"address" validate:"required"`
 		Profile  string `json:"profile"`
 	}
 
 	UpdateUsersReqBody struct {
-		Fullname string `json:"fullname" validate:"omitempty"`
-		Email    string `json:"email" validate:"omitempty"`
-		Address  string `json:"address" validate:"omitempty"`
-		Pin      string `json:"pin" validate:"omitempty"`
+		Fullname string `json:"fullname" validate:"required"`
+		Email    string `json:"email" validate:"required"`
+		Address  string `json:"address" validate:"required"`
+		Pin      string `json:"pin" validate:"required"`
 	}
 
 	LoginByPin struct {
-		Phone string `json:"phone" validate:"omitempty"`
-		Pin   string `json:"pin" validate:"omitempty"`
+		Phone string `json:"phone" validate:"required"`
+		Pin   string `json:"pin" validate:"required"`
 	}
 
 	LoginAdmin struct {
-		Email    string `json:"email" validate:"omitempty,email"`
-		Password string `json:"password" validate:"omitempty"`
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required"`
 	}
 
 	CheckPhoneReqBody struct {
-		Phone string `json:"phone" validate:"omitempty"`
+		Phone    string `json:"phone" validate:"required"`
+		DeviceId string `json:"device_id" validate:"required"`
 	}
 
 	RequestPhoneOtp struct {
-		Phone string `json:"phone" validate:"omitempty"`
-		Otp   string `json:"otp" validate:"omitempty"`
+		Phone string `json:"phone" validate:"required"`
+		Otp   string `json:"otp" validate:"required"`
 	}
 
 	JWTClaims struct {

@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func SendOtp(phone string, otp string) (string, bool) {
+func SendOtp(phone string, otp string) (string, int) {
 	url := os.Getenv("VENDOR_QONTAK")
 	method := "POST"
 	phoneNumber := phone
@@ -39,14 +39,14 @@ func SendOtp(phone string, otp string) (string, bool) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return err.Error(), false
+		return err.Error(), 500
 	}
 
 	// Create HTTP request
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		fmt.Println("Error:", err)
-		return err.Error(), false
+		return err.Error(), 500
 	}
 
 	// Set request headers
@@ -58,12 +58,12 @@ func SendOtp(phone string, otp string) (string, bool) {
 	res, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return err.Error(), false
+		return err.Error(), res.StatusCode
 	}
 	defer res.Body.Close()
 
 	// Process response
 	fmt.Println("Response status:", res.Status)
 	Logger("info", "Success Send OTP to number: "+phone, "Rc: "+res.Status)
-	return res.Status, true
+	return res.Status, res.StatusCode
 }

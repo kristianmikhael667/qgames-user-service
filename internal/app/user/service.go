@@ -16,7 +16,7 @@ type service struct {
 type Service interface {
 	Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*pkgdto.SearchGetResponse[dto.UsersResponse], error)
 	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error)
-	GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UserResponseAll, int16, string, error)
+	GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int16, string, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -71,26 +71,24 @@ func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersR
 	return result, sc, msg, nil
 }
 
-func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UserResponseAll, int16, string, error) {
-	var user_data *dto.UserResponseAll
+func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int16, string, error) {
+	var user_data *dto.UsersResponse
 
 	users, sc, msg, err := s.UserRepository.MyAccount(ctx, iduser)
 	if err != nil {
 		return nil, sc, msg, err
 	}
 
-	user_data = &dto.UserResponseAll{
-		Data: dto.UsersResponse{
-			Uuid:      users.UidUser.String(),
-			Fullname:  users.Fullname,
-			Phone:     users.Phone,
-			Email:     users.Email,
-			Address:   users.Address,
-			Profile:   users.Profile,
-			CreatedAt: users.CreatedAt,
-			UpdatedAt: users.UpdatedAt,
-		},
-		Roles: roles,
+	user_data = &dto.UsersResponse{
+		Uuid:      users.UidUser.String(),
+		Fullname:  users.Fullname,
+		Phone:     users.Phone,
+		Email:     users.Email,
+		Address:   users.Address,
+		Profile:   users.Profile,
+		CreatedAt: users.CreatedAt,
+		UpdatedAt: users.UpdatedAt,
+		Roles:     roles,
 	}
 
 	return user_data, sc, msg, nil
