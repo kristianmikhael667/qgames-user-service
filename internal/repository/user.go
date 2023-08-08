@@ -7,7 +7,6 @@ import (
 	dto "main/internal/dto"
 	model "main/internal/model"
 	pkgdto "main/package/dto"
-	pkgutil "main/package/util"
 	"main/package/util/response"
 	"strings"
 	"time"
@@ -21,10 +20,8 @@ type User interface {
 	Save(ctx context.Context, users *dto.RegisterUsersRequestBody) (model.User, error)
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
-	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (model.User, int, bool, string, error)
+	CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
-	GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error)
-	UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int16, string, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error)
@@ -113,142 +110,35 @@ func (r *user) ExistByPhone(ctx context.Context, numbers string) (bool, error) {
 	return isExist, nil
 }
 
-func (r *user) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (model.User, int, bool, string, error) {
+func (r *user) CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error) {
 	var users model.User
-	var trylimit model.Attempt
-	var sessions model.Session
 
-	phones := strings.Replace(phone.Phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
-
-	timenow := time.Now()
-	if err := r.Db.WithContext(ctx).Model(&model.Attempt{}).Where("phone = ? ", phones).First(&trylimit).Error; err != nil {
-		// create try limit
-		newAttemp := model.Attempt{
-			Phone:       phones,
-			PinAttempt:  0,
-			OtpAttempt:  0,
-			LastAttempt: timenow,
-		}
-		if err := r.Db.WithContext(ctx).Save(&newAttemp).Error; err != nil {
-			return users, 500, false, "Failed create attemp", err
-		}
-	}
-
-	curr := timenow.Format("2006-01-02")
-	lastTest := trylimit.LastAttempt.Format("2006-01-02")
-
-	if (trylimit.OtpAttempt >= 3) && (curr == lastTest) {
-		helper.Logger("error", "Otp already 3 times  : "+string(rune(400)), "Rc: "+string(rune(400)))
-		return users, 400, false, "Otp already 3 times", response.CustomErrorBuilder(400, "Error", "Otp already 3 times")
-
-	} else if curr != lastTest {
-		trylimit.OtpAttempt = 0
-	}
-
-	otp := helper.GeneratePin(6)
 	status_user := false
 
-	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phones).First(&users).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phone).First(&users).Error; err != nil {
 		status_user = true
 
 		newUsers := model.User{
-			Phone: phones,
+			Phone: phone,
 		}
 
 		if err := r.Db.WithContext(ctx).Save(&newUsers).Error; err != nil {
 			fmt.Println("error apa ini ", err.Error())
-			helper.Logger("error", "Failed Create User With Number : "+phones, "400")
+			helper.Logger("error", "Failed Create User With Number : "+phone, "400")
 		} else {
-			helper.Logger("info", "Success Create User With Number: "+phones, "Rc: "+string(rune(201)))
+			helper.Logger("info", "Success Create User With Number: "+phone, "Rc: "+string(rune(201)))
 			users.UidUser = newUsers.UidUser
 		}
 	}
 
-	// Sementara karena blm ada otp dari vendor maka kita buat send ke logs dlu
-	helper.Logger("info", "Success Send Otp with Number: "+phones+" Your OTP : "+otp, "Rc: "+string(rune(201)))
-
-	hashedOtp, err := pkgutil.HashPassword(otp)
-	if err != nil {
-		return users, 500, status_user, "Error Hash OTP", response.ErrorBuilder(&response.ErrorConstant.InternalServerError, err)
-	}
-
-	newOtp := model.Otp{
-		Phone:     phones,
-		Otp:       hashedOtp,
-		ExpiredAt: time.Now().Add(1 * time.Minute),
-	}
-	if err := r.Db.WithContext(ctx).Save(&newOtp).Error; err != nil {
-		return users, 500, false, "Failed create otp", err
-	}
-
-	if status_user == false {
-		trylimit.OtpAttempt++
-		trylimit.LastAttempt = time.Now()
-
-		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
-			return users, 500, false, "Failed create otp", err
-		}
-	}
-
-	// Sebelum create otp handle dlu sessionnya
-	// Jika user id dan device id gk ketemu maka akan minta otp
-
-	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", users.UidUser).First(&sessions).Error; err != nil {
-		// Create sesssion for new user
-		newSession := model.Session{
-			UserId:    users.UidUser.String(),
-			DeviceId:  phone.DeviceId,
-			LoginInAt: time.Now(),
-		}
-		if err := r.Db.WithContext(ctx).Save(&newSession).Error; err != nil {
-			return users, 500, false, "Failed create session", err
-		}
-		// Call API Untuk Session baru
-		msg, sc := helper.SendOtp(phones, otp)
-		if sc != 200 && sc != 201 {
-			helper.Logger("error", msg, "400")
-			return users, sc, false, msg, err
-		}
-		helper.Logger("info", msg, "Rc: "+string(rune(201)))
-		return users, 201, status_user, "An instruction to verify your phone number has been sent to your phone.", nil
-	}
-
-	// User not complate until otp masih user baru code 201, maka will masukan nomor call otp karna status nya harus aktive
 	fmt.Println("ssss ", users.Status)
 	if users.Status != "active" {
-		// Call API Untuk Session baru
-		msg, sc := helper.SendOtp(phones, otp)
-		if sc != 200 && sc != 201 {
-			helper.Logger("error", msg, "400")
-			return users, sc, false, msg, nil
-		}
-		helper.Logger("info", msg, "Rc: "+string(rune(201)))
-		return users, 201, status_user, "Uncomplate otp regiter", nil
+		return users, 201, status_user, "An instruction to verify your phone number has been sent to your phone.", nil
 	} else if users.Fullname == "" && users.Pin == "" && users.Email == "" && users.Address == "" {
-		trylimit.OtpAttempt = 0
-		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
-			return users, 500, false, "Failed create otp", err
-		}
 		// user not complate regist, ketika input nomor lagi, maka akan diarahkan ke page regist code 205 Reset Content
 		return users, 205, status_user, "Uncomplate register users, please full regist", nil
 	}
-
-	// Already Device
-	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("device_id = ?", phone.DeviceId).First(&sessions).Error; err != nil {
-		// OTP Not Plus if not call otp
-		trylimit.OtpAttempt = 0
-		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
-			return users, 500, false, "Failed create otp", err
-		}
-		return users, 403, status_user, "Device Already Login", nil
-	}
-	// OTP Not Plus if not call otp
-	trylimit.OtpAttempt = 0
-	if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
-		return users, 500, false, "Failed create otp", err
-	}
-	return users, 200, status_user, "Users valid with pin", nil
+	return users, 200, false, "Users valid with pin", nil
 }
 
 func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error) {
@@ -302,31 +192,6 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	}
 
 	return users, true, "Success verify OTP", nil
-}
-
-func (r *user) GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error) {
-	var assign []model.Assign
-
-	if err := r.Db.WithContext(ctx).Where("users = ? ", uidusers).Find(&assign).Error; err != nil {
-		helper.Logger("error", "Assign Not Found", "Rc: "+string(rune(404)))
-	}
-	return assign, nil
-}
-
-func (r *user) UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error) {
-	var attemp model.Attempt
-
-	phones := strings.Replace(phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
-
-	if err := r.Db.WithContext(ctx).Model(&model.Attempt{}).Where("phone = ?", phones).First(&attemp).Error; err != nil {
-		return 404, "Error get phone attemp", err
-	}
-	attemp.OtpAttempt = 0
-	if err := r.Db.WithContext(ctx).Save(&attemp).Error; err != nil {
-		return 403, "Error update phone attemp", err
-	}
-	return 201, "Success update", nil
 }
 
 func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error) {

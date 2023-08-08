@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"main/helper"
 	model "main/internal/model"
 
 	"gorm.io/gorm"
@@ -9,6 +10,7 @@ import (
 
 type Assign interface {
 	Assign(ctx context.Context, users, role, permission string) error
+	GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error)
 }
 
 type assigns struct {
@@ -30,4 +32,13 @@ func (a *assigns) Assign(ctx context.Context, users, role, permission string) er
 		return err
 	}
 	return nil
+}
+
+func (r *assigns) GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error) {
+	var assign []model.Assign
+
+	if err := r.Db.WithContext(ctx).Where("users = ? ", uidusers).Find(&assign).Error; err != nil {
+		helper.Logger("error", "Assign Not Found", "Rc: "+string(rune(404)))
+	}
+	return assign, nil
 }

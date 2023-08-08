@@ -11,5 +11,6 @@ func (h *handler) Route(g *echo.Group) {
 	g.POST("/verify-otp", h.VerifyOtp)
 	g.POST("/loginbypin", h.LoginPin)
 	g.POST("/admin-login", h.LoginAdmin)
-	g.POST("/logout-user", h.RevokeToken)
+	g.POST("/reset-deviceid", h.ReqResetDevice)
+	g.POST("/reset-session", h.ResetDevice)
 }

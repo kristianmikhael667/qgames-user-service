@@ -11,11 +11,15 @@ import (
 	repository "main/internal/repository"
 	pkgutil "main/package/util"
 	"main/package/util/response"
+	"strings"
 )
 
 type service struct {
-	UserRepository   repository.User
-	AssignRepository repository.Assign
+	UserRepository    repository.User
+	AssignRepository  repository.Assign
+	AttemptRepository repository.Attempt
+	OtpRepository     repository.Otp
+	SessionRepository repository.Session
 }
 
 type Service interface {
@@ -25,12 +29,17 @@ type Service interface {
 	VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error)
 	LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int16, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*dto.UserWithJWTResponse, string, int, error)
+	ReqResetDevice(ctx context.Context, phone *dto.CheckSession) (string, int, error)
+	ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (string, int, error)
 }
 
 func NewService(f *factory.Factory) Service {
 	return &service{
-		UserRepository:   f.UserRepository,
-		AssignRepository: f.AssignRepository,
+		UserRepository:    f.UserRepository,
+		AssignRepository:  f.AssignRepository,
+		AttemptRepository: f.AttemptRepository,
+		OtpRepository:     f.OtpRepository,
+		SessionRepository: f.SessionRepository,
 	}
 }
 
@@ -108,27 +117,49 @@ func (s *service) CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequ
 }
 
 func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, int, bool, error) {
-	// Request Otp
-	requestOtp, sc, status, msg, err := s.UserRepository.RequestOtp(ctx, phone)
+	// Step 1. Number Check Regex
+	phones := strings.Replace(phone.Phone, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
+
+	// Step 2. Check Attempt
+	trylimit, sc, msg, err := s.AttemptRepository.CreateAttempt(ctx, phones)
+
+	if err != nil {
+		return err.Error(), 500, false, err
+	}
+
+	// Step 3. Create Users
+	users, sc, status, msg, err := s.UserRepository.CreateUsers(ctx, phones, phone.DeviceId)
 
 	if err != nil {
 		return err.Error(), sc, status, err
 	}
 
+	// Step 4. Create Assign Users only new user
 	if status == true {
-		// Assign Role user-default and Permission
-		err = s.AssignRepository.Assign(ctx, requestOtp.UidUser.String(), "user-default", "common-user,no-topup-balance,check-wallet,topup-wallet,list-product,create-trx")
+		err = s.AssignRepository.Assign(ctx, users.UidUser.String(), "user-default", "common-user,no-topup-balance,check-wallet,topup-wallet,list-product,create-trx")
 		if err != nil {
 			return "error assign", sc, status, err
 		}
 	}
 
+	// Step 5. Create Session and Check Device Id
+	msg, sc, otp, err := s.SessionRepository.CreateSession(ctx, users.UidUser.String(), phone.DeviceId, phone.Phone, sc, msg)
+	if err != nil {
+		return err.Error(), sc, status, err
+	}
+
+	// Step 6. Create OTP and if send otp
+	msg, sc, err = s.OtpRepository.SendOtp(ctx, phones, sc, otp, trylimit, msg)
+	if err != nil {
+		return err.Error(), sc, status, err
+	}
 	return msg, sc, status, nil
 }
 
 func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error) {
 	var result *dto.UserWithJWTResponse
-	// Check Email
+	// Check OTP
 	response, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, validotp.Phone, validotp.Otp)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
@@ -140,7 +171,7 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 	}
 
 	// Get all assign and loop
-	response_assign, err := s.UserRepository.GetAssignUsers(ctx, response.UidUser.String())
+	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, response.UidUser.String())
 
 	if err != nil {
 		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
@@ -156,7 +187,7 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 	claims := util.CreateJWTClaims(response.UidUser.String(), response.Email, response.Phone, firstRole, permissions, false)
 
 	// Update Limit
-	statuscode, msg, err := s.UserRepository.UpdateAttemptOtp(ctx, validotp.Phone)
+	statuscode, msg, err := s.AttemptRepository.UpdateAttemptOtp(ctx, validotp.Phone)
 	if statuscode != 201 {
 		return result, msg, statuscode, err
 	}
@@ -193,7 +224,7 @@ func (s *service) LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.
 	}
 	fmt.Println("ssss ", responses.Phone)
 	// Get all assign and loop
-	response_assign, err := s.UserRepository.GetAssignUsers(ctx, responses.UidUser.String())
+	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, responses.UidUser.String())
 
 	if err != nil {
 		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
@@ -261,4 +292,46 @@ func (s *service) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*
 		Admin: true,
 	}
 	return result, msg, sc, nil
+}
+
+func (s *service) ReqResetDevice(ctx context.Context, phone *dto.CheckSession) (string, int, error) {
+	// Step 1. Number Check Regex
+	phones := strings.Replace(phone.Phone, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
+
+	// Step 2. Check Attempt
+	trylimit, sc, msg, err := s.AttemptRepository.CreateAttempt(ctx, phones)
+	if err != nil {
+		return msg, sc, err
+	}
+
+	otp := helper.GeneratePin(6)
+
+	msg, sc, err = s.OtpRepository.SendOtp(ctx, phones, 201, otp, trylimit, msg)
+	if err != nil {
+		return msg, sc, err
+	}
+
+	return "Send OTP Reset", sc, nil
+}
+
+func (s *service) ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (string, int, error) {
+	// Step 1. Check Verify OTP
+	_, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, session.Phone, session.Otp)
+	if err != nil {
+		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		return msg, 403, err
+	}
+	if verifyOtp == false {
+		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		return msg, 401, err
+	}
+
+	// Step 2. Update Device ID
+	msg, sc, err := s.SessionRepository.UpdateSession(ctx, 200, msg, session)
+	if err != nil {
+		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		return msg, sc, err
+	}
+	return msg, sc, nil
 }

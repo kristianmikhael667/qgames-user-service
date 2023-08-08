@@ -4,9 +4,7 @@ import (
 	"fmt"
 	dto "main/internal/dto"
 	"main/internal/factory"
-	"main/internal/pkg/util"
 	"main/package/util/response"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -50,9 +48,8 @@ func (h *handler) RequestOtp(c echo.Context) error {
 	fmt.Println("user id ", phoneNumber.Phone)
 	fmt.Println("dev ", phoneNumber.DeviceId)
 
-	checkphone, sc, status, err := h.service.RequestOtp(c.Request().Context(), phoneNumber)
+	checkphone, sc, _, err := h.service.RequestOtp(c.Request().Context(), phoneNumber)
 	if err != nil {
-		fmt.Println("sc ? ", sc, " ", checkphone)
 		return response.ErrorResponse(err).Send(c)
 	}
 
@@ -60,14 +57,13 @@ func (h *handler) RequestOtp(c echo.Context) error {
 		return response.CustomErrorBuilder(sc, "Device Login", checkphone).Send(c)
 	}
 
-	if sc == 201 && status == true {
+	if sc == 201 {
 		return response.CustomSuccessBuilder(sc, checkphone, "New User", nil).Send(c)
-	} else if sc == 200 && status == false {
+	} else if sc == 200 {
 		return response.CustomSuccessBuilder(sc, checkphone, "Old users", nil).Send(c)
 	} else {
-		return response.CustomSuccessBuilder(sc, checkphone, "Old users", nil).Send(c)
+		return response.CustomErrorBuilder(sc, checkphone, "Error").Send(c)
 	}
-
 }
 
 func (h *handler) VerifyOtp(c echo.Context) error {
@@ -129,13 +125,44 @@ func (h *handler) LoginAdmin(c echo.Context) error {
 	}
 }
 
-func (h *handler) RevokeToken(c echo.Context) error {
-	var blacklistMap = make(map[string]time.Time)
-	authHeader := c.Request().Header.Get("Authorization")
-	token, _ := util.ParseJWTToken(authHeader)
+func (h *handler) ReqResetDevice(c echo.Context) error {
+	phoneNumber := new(dto.CheckSession)
 
-	blacklistMap[token.ExpiresAt.String()] = time.Now()
+	if err := c.Bind(&phoneNumber); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.NotFound, err).Send(c)
+	}
+	if err := c.Validate(phoneNumber); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
+	}
 
-	return response.CustomSuccessBuilder(201, "Success Logout", "Revoke Token", nil).Send(c)
+	msg, sc, err := h.service.ReqResetDevice(c.Request().Context(), phoneNumber)
+	if err != nil {
+		return response.ErrorResponse(err).Send(c)
+	}
 
+	if sc != 201 {
+		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
+	}
+	return response.CustomSuccessBuilder(sc, "reset-device", msg, nil).Send(c)
+}
+
+func (h *handler) ResetDevice(c echo.Context) error {
+	session := new(dto.ReqSessionReset)
+
+	if err := c.Bind(&session); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.NotFound, err).Send(c)
+	}
+	if err := c.Validate(session); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
+	}
+
+	msg, sc, err := h.service.ResetDevice(c.Request().Context(), session)
+	if err != nil {
+		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
+	}
+
+	if sc != 201 {
+		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
+	}
+	return response.CustomSuccessBuilder(sc, "reset-device", msg, nil).Send(c)
 }
