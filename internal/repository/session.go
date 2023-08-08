@@ -32,9 +32,10 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", uid_users).First(&sessions).Error; err != nil {
 		// Create sesssion for new user
 		newSession := model.Session{
-			UserId:    uid_users,
-			DeviceId:  device_id,
-			LoginInAt: time.Now(),
+			UserId:       uid_users,
+			DeviceId:     device_id,
+			LoginInAt:    time.Now(),
+			ChangeDevice: time.Now(),
 		}
 		if err := r.Db.WithContext(ctx).Save(&newSession).Error; err != nil {
 			return "Failed create session", 500, "Error", err
