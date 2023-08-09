@@ -19,13 +19,13 @@ func userSeeder(db *gorm.DB) {
 	var users = []model.User{
 		{
 			UidUser:   uuid.NewV4(),
-			Phone:     "08979228501",
-			Fullname:  "Super Admin",
-			Email:     "bagasadesetyo99@gmail.com",
+			Phone:     "081399941007",
+			Fullname:  "Super Admin Qgames",
+			Email:     "admin@gmail.com",
 			Password:  hashedPassword,
 			Pin:       hashedPassword,
-			Address:   "Jalan Citayam",
-			Profile:   "bagas.png",
+			Address:   "QP Office, Grand Slipi Tower Lantai 5 Unit I. 1, Jalan S. Parman Kav 22-24 Jakarta Barat, DKI Jakarta",
+			Profile:   "qgames.png",
 			Status:    "active",
 			CreatedAt: now,
 			UpdatedAt: now,

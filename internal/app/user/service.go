@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"main/helper"
 	dto "main/internal/dto"
 	"main/internal/factory"
@@ -101,24 +102,8 @@ func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto
 
 func (s *service) ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error) {
 	var result *dto.UsersResponse
-	// 1. Check Account
-	users, sc, msg, err := s.UserRepository.MyAccount(ctx, uiduser)
-	if err != nil {
-		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
-		return result, sc, msg, err
-	}
-	// Step 1. Check Verify OTP
-	_, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, users.Phone, payload.Otp)
-	if err != nil {
-		helper.Logger("error", msg, "Rc: "+string(rune(403)))
-		return result, 403, msg, err
-	}
-	if verifyOtp == false {
-		helper.Logger("error", msg, "Rc: "+string(rune(403)))
-		return result, 401, msg, err
-	}
-
-	// 2. Reset PIN
+	fmt.Println("uiddc ", uiduser)
+	// Reset PIN
 	data, sc, msg, err := s.UserRepository.ResetPin(ctx, uiduser, payload)
 
 	if err != nil {

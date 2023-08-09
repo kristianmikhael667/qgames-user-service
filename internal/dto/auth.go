@@ -68,7 +68,6 @@ type (
 	}
 
 	ConfirmPin struct {
-		Otp        string `json:"otp" validate:"required"`
 		NewPin     string `json:"new_pin" validate:"required"`
 		ConfirmPin string `json:"confirm_pin" validate:"required"`
 	}
