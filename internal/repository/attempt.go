@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	model "main/internal/model"
 	"strings"
 	"time"
@@ -31,7 +30,6 @@ func (r *attempt) CreateAttempt(ctx context.Context, phone string) (model.Attemp
 	timenow := time.Now()
 
 	if err := r.Db.WithContext(ctx).Model(&model.Attempt{}).Where("phone = ? ", phone).First(&trylimit).Error; err != nil {
-		fmt.Println("msk sini ss++")
 		// create try limit
 		newAttemp := model.Attempt{
 			Phone:       phone,

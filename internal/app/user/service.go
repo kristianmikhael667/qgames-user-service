@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"main/helper"
 	dto "main/internal/dto"
 	"main/internal/factory"
 	repository "main/internal/repository"
@@ -10,18 +11,22 @@ import (
 )
 
 type service struct {
-	UserRepository repository.User
+	UserRepository    repository.User
+	SessionRepository repository.Session
 }
 
 type Service interface {
 	Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*pkgdto.SearchGetResponse[dto.UsersResponse], error)
 	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error)
-	GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int16, string, error)
+	GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error)
+	ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error)
+	Logout(ctx context.Context, uiduser string, payload *dto.DeviceId) (string, int, error)
 }
 
 func NewService(f *factory.Factory) Service {
 	return &service{
-		UserRepository: f.UserRepository,
+		UserRepository:    f.UserRepository,
+		SessionRepository: f.SessionRepository,
 	}
 }
 
@@ -71,7 +76,7 @@ func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersR
 	return result, sc, msg, nil
 }
 
-func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int16, string, error) {
+func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error) {
 	var user_data *dto.UsersResponse
 
 	users, sc, msg, err := s.UserRepository.MyAccount(ctx, iduser)
@@ -92,4 +97,62 @@ func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto
 	}
 
 	return user_data, sc, msg, nil
+}
+
+func (s *service) ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error) {
+	var result *dto.UsersResponse
+	// 1. Check Account
+	users, sc, msg, err := s.UserRepository.MyAccount(ctx, uiduser)
+	if err != nil {
+		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
+		return result, sc, msg, err
+	}
+	// Step 1. Check Verify OTP
+	_, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, users.Phone, payload.Otp)
+	if err != nil {
+		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		return result, 403, msg, err
+	}
+	if verifyOtp == false {
+		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		return result, 401, msg, err
+	}
+
+	// 2. Reset PIN
+	data, sc, msg, err := s.UserRepository.ResetPin(ctx, uiduser, payload)
+
+	if err != nil {
+		return result, sc, msg, err
+	}
+
+	result = &dto.UsersResponse{
+		Uuid:      data.UidUser.String(),
+		Fullname:  data.Fullname,
+		Phone:     data.Phone,
+		Email:     data.Email,
+		Address:   data.Address,
+		Profile:   data.Profile,
+		CreatedAt: data.CreatedAt,
+		UpdatedAt: data.UpdatedAt,
+	}
+
+	return result, sc, msg, nil
+}
+
+func (s *service) Logout(ctx context.Context, uiduser string, payload *dto.DeviceId) (string, int, error) {
+	// 1. Check Account
+	users, sc, msg, err := s.UserRepository.MyAccount(ctx, uiduser)
+	if err != nil {
+		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
+		return msg, sc, err
+	}
+
+	// 2. Delete Session
+	msg, sc, err = s.SessionRepository.LogoutSession(ctx, users.Phone, payload)
+	if err != nil {
+		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
+		return msg, sc, err
+	}
+
+	return msg, sc, err
 }

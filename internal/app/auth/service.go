@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"main/helper"
 	dto "main/internal/dto"
 	"main/internal/factory"
@@ -27,9 +26,9 @@ type Service interface {
 	CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error)
 	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, int, bool, error)
 	VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error)
-	LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int16, error)
+	LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*dto.UserWithJWTResponse, string, int, error)
-	ReqResetDevice(ctx context.Context, phone *dto.CheckSession) (string, int, error)
+	ConfirmReset(ctx context.Context, phone *dto.CheckSession) (string, int, error)
 	ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (string, int, error)
 }
 
@@ -213,17 +212,27 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 	return result, msg, 201, nil
 }
 
-func (s *service) LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int16, error) {
+func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error) {
 	var result *dto.UserWithJWTResponse
+	// Step 1. Check Number User
+	users, sc, msg, err := s.UserRepository.GetUserByNumber(ctx, loginpin.Phone)
+	if err != nil {
+		return result, msg, sc, err
+	}
+	// Step 2. Check Session and Check Device Id
+	msg, sc, _, _ = s.SessionRepository.CreateSession(ctx, users.UidUser.String(), loginpin.DeviceId, loginpin.Phone, sc, msg)
+	if sc == 403 {
+		return result, msg, sc, err
+	}
 
-	// Login Pin
-	responses, sc, msg, err := s.UserRepository.LoginByPin(ctx, loginotp)
+	// Step 3. Login Pin
+	responses, sc, msg, err := s.UserRepository.LoginByPin(ctx, loginpin)
 
 	if err != nil {
 		return result, msg, sc, err
 	}
-	fmt.Println("ssss ", responses.Phone)
-	// Get all assign and loop
+
+	// Step 4. Get all assign and loop
 	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, responses.UidUser.String())
 
 	if err != nil {
@@ -254,6 +263,7 @@ func (s *service) LoginPin(ctx context.Context, loginotp *dto.LoginByPin) (*dto.
 			Profile:   responses.Profile,
 			CreatedAt: responses.CreatedAt,
 			UpdatedAt: responses.UpdatedAt,
+			Roles:     firstRole,
 		},
 		Token: token,
 	}
@@ -294,7 +304,7 @@ func (s *service) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*
 	return result, msg, sc, nil
 }
 
-func (s *service) ReqResetDevice(ctx context.Context, phone *dto.CheckSession) (string, int, error) {
+func (s *service) ConfirmReset(ctx context.Context, phone *dto.CheckSession) (string, int, error) {
 	// Step 1. Number Check Regex
 	phones := strings.Replace(phone.Phone, "+62", "0", -1)
 	phones = strings.Replace(phones, "62", "0", -1)

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	dto "main/internal/dto"
 	"main/internal/factory"
 	"main/package/util/response"
@@ -44,9 +43,6 @@ func (h *handler) RequestOtp(c echo.Context) error {
 	if err := c.Validate(phoneNumber); err != nil {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
-
-	fmt.Println("user id ", phoneNumber.Phone)
-	fmt.Println("dev ", phoneNumber.DeviceId)
 
 	checkphone, sc, _, err := h.service.RequestOtp(c.Request().Context(), phoneNumber)
 	if err != nil {
@@ -98,9 +94,9 @@ func (h *handler) LoginPin(c echo.Context) error {
 	}
 
 	if sc != 201 {
-		return response.CustomErrorBuilder(int(sc), err.Error(), msg).Send(c)
+		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
 	} else {
-		return response.CustomSuccessBuilder(int(sc), result, msg, nil).Send(c)
+		return response.CustomSuccessBuilder(sc, result, msg, nil).Send(c)
 	}
 }
 
@@ -125,7 +121,7 @@ func (h *handler) LoginAdmin(c echo.Context) error {
 	}
 }
 
-func (h *handler) ReqResetDevice(c echo.Context) error {
+func (h *handler) ConfirmReset(c echo.Context) error {
 	phoneNumber := new(dto.CheckSession)
 
 	if err := c.Bind(&phoneNumber); err != nil {
@@ -135,7 +131,7 @@ func (h *handler) ReqResetDevice(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	msg, sc, err := h.service.ReqResetDevice(c.Request().Context(), phoneNumber)
+	msg, sc, err := h.service.ConfirmReset(c.Request().Context(), phoneNumber)
 	if err != nil {
 		return response.ErrorResponse(err).Send(c)
 	}

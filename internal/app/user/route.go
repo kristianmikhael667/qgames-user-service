@@ -13,4 +13,6 @@ func (h *handler) Route(g *echo.Group) {
 	g.GET("", h.Get)
 	g.PUT("/update-user", h.UpdateUser)
 	g.GET("/myaccount", h.MyAccount)
+	g.POST("/reset-pin", h.ResetPin)
+	g.POST("/logout", h.Logout)
 }

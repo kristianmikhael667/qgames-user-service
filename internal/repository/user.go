@@ -23,9 +23,11 @@ type User interface {
 	CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
-	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int16, string, error)
+	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error)
-	MyAccount(ctx context.Context, iduser string) (model.User, int16, string, error)
+	GetUserByNumber(ctx context.Context, phone string) (model.User, int, string, error)
+	MyAccount(ctx context.Context, iduser string) (model.User, int, string, error)
+	ResetPin(ctx context.Context, uid_user string, payload *dto.ConfirmPin) (model.User, int, string, error)
 }
 
 type user struct {
@@ -223,7 +225,7 @@ func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.Update
 	return user, 201, "Success Update User", nil
 }
 
-func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int16, string, error) {
+func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error) {
 	var user model.User
 	var trylimit model.Attempt
 
@@ -247,7 +249,7 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 			LastAttempt: timenow,
 		}
 		if err := r.Db.WithContext(ctx).Save(&newAttemp).Error; err != nil {
-			return user, 403, "Failed create attemp", err
+			return user, 500, "Failed create attemp", err
 		}
 	}
 
@@ -255,16 +257,16 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 		helper.Logger("error", "Wrong PIN", "Rc: "+string(rune(403)))
 		trylimit.PinAttempt = trylimit.PinAttempt + 1
 		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
-			return user, 403, "Failed update trylimit", err
+			return user, 500, "Failed update trylimit", err
 		}
-		return user, 403, "Wrong PIN", response.CustomErrorBuilder(403, "Error", "Wrong PIN")
+		return user, 401, "Wrong PIN", response.CustomErrorBuilder(401, "Error", "Wrong PIN")
 
 	} else if trylimit.PinAttempt == 3 {
-		return user, 400, "Your access has been restricted, redirecting to PIN verification", response.CustomErrorBuilder(403, "Error", "Your access has been restricted, redirecting to PIN verification")
+		return user, 400, "Your access has been restricted, redirecting to PIN verification", response.CustomErrorBuilder(400, "Error", "Your access has been restricted, redirecting to PIN verification")
 	}
 	trylimit.PinAttempt = 0
 	if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
-		return user, 403, "Failed update trylimit", err
+		return user, 500, "Failed update trylimit", err
 	}
 
 	return user, 201, "Success Login By Pin", nil
@@ -284,13 +286,53 @@ func (r *user) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (mode
 	}
 }
 
-func (r *user) MyAccount(ctx context.Context, iduser string) (model.User, int16, string, error) {
+func (r *user) GetUserByNumber(ctx context.Context, phone string) (model.User, int, string, error) {
+	var user model.User
+
+	phones := strings.Replace(phone, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
+
+	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).Find(&user).Error; err != nil {
+		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))
+		return user, 404, "User Not Found", err
+	}
+	return user, 200, "Get User " + user.Fullname, nil
+}
+
+func (r *user) MyAccount(ctx context.Context, iduser string) (model.User, int, string, error) {
 	var user model.User
 
 	if err := r.Db.WithContext(ctx).Where("uid_user = ? ", iduser).Find(&user).Error; err != nil {
-		helper.Logger("error", "Assign Not Found", "Rc: "+string(rune(404)))
+		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))
 		return user, 404, "User Not Found", nil
 
 	}
 	return user, 200, "Get User " + user.Fullname, nil
+}
+
+func (r *user) ResetPin(ctx context.Context, uid_user string, payload *dto.ConfirmPin) (model.User, int, string, error) {
+	var users model.User
+
+	if err := r.Db.WithContext(ctx).Where("uid_user = ? ", uid_user).Find(&users).Error; err != nil {
+		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))
+		return users, 404, "User Not Found", nil
+	}
+
+	// Change PIN
+	if payload.NewPin != payload.ConfirmPin {
+		return users, 401, "Different New Pin with Confirm New Pin", nil
+	}
+
+	hashedPin, err := bcrypt.GenerateFromPassword([]byte(payload.NewPin), bcrypt.DefaultCost)
+	if err != nil {
+		return users, 403, "Failed Generate Pin", err
+	}
+
+	users.Pin = string(hashedPin)
+
+	if err := r.Db.WithContext(ctx).Save(&users).Error; err != nil {
+		return users, 500, "Failed Update User", err
+	}
+
+	return users, 201, "Success Update PIN User", nil
 }

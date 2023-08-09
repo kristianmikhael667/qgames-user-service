@@ -23,8 +23,9 @@ type (
 	}
 
 	LoginByPin struct {
-		Phone string `json:"phone" validate:"required"`
-		Pin   string `json:"pin" validate:"required"`
+		Phone    string `json:"phone" validate:"required"`
+		Pin      string `json:"pin" validate:"required"`
+		DeviceId string `json:"device_id" validate:"required"`
 	}
 
 	LoginAdmin struct {
@@ -39,6 +40,10 @@ type (
 
 	CheckSession struct {
 		Phone string `json:"phone" validate:"required"`
+	}
+
+	DeviceId struct {
+		DeviceId string `json:"device_id" validate:"required"`
 	}
 
 	ReqSessionReset struct {
@@ -60,5 +65,11 @@ type (
 		Permissions []string `json:"permissions"`
 		Admin       bool     `json:"admin"`
 		jwt.RegisteredClaims
+	}
+
+	ConfirmPin struct {
+		Otp        string `json:"otp" validate:"required"`
+		NewPin     string `json:"new_pin" validate:"required"`
+		ConfirmPin string `json:"confirm_pin" validate:"required"`
 	}
 )

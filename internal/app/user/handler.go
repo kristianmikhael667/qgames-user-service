@@ -99,3 +99,57 @@ func (h *handler) MyAccount(c echo.Context) error {
 	}
 	return res.CustomErrorBuilder(403, "Forbidden", "Token not allowed to access").Send(c)
 }
+
+func (h *handler) ResetPin(c echo.Context) error {
+	authHeader := c.Request().Header.Get("Authorization")
+	token, err := util.ParseJWTToken(authHeader)
+	if err != nil {
+		return res.ErrorBuilder(&res.ErrorConstant.Unauthorized, err).Send(c)
+	}
+
+	payload := new(dto.ConfirmPin)
+
+	if err := c.Bind(payload); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.BadRequest, err).Send(c)
+	}
+
+	if err := c.Validate(payload); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
+	}
+
+	uid := token.Uuid
+	users, sc, msg, err := h.service.ResetPin(c.Request().Context(), uid, payload)
+
+	if sc != 201 {
+		return response.CustomErrorBuilder(sc, msg, "Error").Send(c)
+	}
+
+	return response.CustomSuccessBuilder(sc, users, msg, nil).Send(c)
+}
+
+func (h *handler) Logout(c echo.Context) error {
+	authHeader := c.Request().Header.Get("Authorization")
+	token, err := util.ParseJWTToken(authHeader)
+	if err != nil {
+		return res.ErrorBuilder(&res.ErrorConstant.Unauthorized, err).Send(c)
+	}
+
+	payload := new(dto.DeviceId)
+
+	if err := c.Bind(payload); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.BadRequest, err).Send(c)
+	}
+
+	if err := c.Validate(payload); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
+	}
+
+	uid := token.Uuid
+	msg, sc, err := h.service.Logout(c.Request().Context(), uid, payload)
+
+	if sc != 201 && sc != 200 {
+		return response.CustomErrorBuilder(sc, msg, "Error").Send(c)
+	}
+
+	return response.CustomSuccessBuilder(sc, msg, "Success Logout", nil).Send(c)
+}

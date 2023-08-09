@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"main/helper"
 	model "main/internal/model"
 	pkgutil "main/package/util"
@@ -53,7 +52,6 @@ func (r *otp) SendOtp(ctx context.Context, phone string, sc int, otp string, try
 			helper.Logger("error", "Otp already 3 times  : "+string(rune(400)), "Rc: "+string(rune(400)))
 			return "Otp already 3 times", 400, response.CustomErrorBuilder(400, "Error", "Otp already 3 times")
 		} else if curr != lastTest {
-			fmt.Println("msk")
 			trylimit.OtpAttempt = 0
 		}
 
