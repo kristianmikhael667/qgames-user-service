@@ -334,5 +334,14 @@ func (r *user) ResetPin(ctx context.Context, uid_user string, payload *dto.Confi
 		return users, 500, "Failed Update User", err
 	}
 
+	// Set Limit 0
+	var trylimit model.Attempt
+	if err := r.Db.WithContext(ctx).Where("phone = ? ", users.Phone).First(&trylimit).Error; err != nil {
+		return users, 404, "Not Found User in TryLimit", err
+	}
+	trylimit.PinAttempt = 0
+	if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+		return users, 500, "Failed update trylimit", err
+	}
 	return users, 201, "Success Update PIN User", nil
 }
