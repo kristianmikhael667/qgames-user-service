@@ -13,6 +13,12 @@ func permissionSeeder(db *gorm.DB) {
 
 	var permission = []model.Permission{
 		{
+			Name:      "Common User",
+			Slug:      "common-user",
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		{
 			Name:      "Create Users",
 			Slug:      "create-users",
 			CreatedAt: now,
@@ -79,20 +85,20 @@ func permissionSeeder(db *gorm.DB) {
 			UpdatedAt: now,
 		},
 		{
-			Name:      "Create Transaction",
-			Slug:      "create-Transaction",
+			Name:      "Create Trx",
+			Slug:      "create-trx",
 			CreatedAt: now,
 			UpdatedAt: now,
 		},
 		{
-			Name:      "Update Transaction",
-			Slug:      "update-Transaction",
+			Name:      "Update trx",
+			Slug:      "update-trx",
 			CreatedAt: now,
 			UpdatedAt: now,
 		},
 		{
-			Name:      "Report Transaction",
-			Slug:      "report-Transaction",
+			Name:      "Report Trx",
+			Slug:      "report-trx",
 			CreatedAt: now,
 			UpdatedAt: now,
 		},

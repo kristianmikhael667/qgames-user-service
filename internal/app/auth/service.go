@@ -137,7 +137,7 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 
 	// Step 4. Create Assign Users only new user
 	if status == true {
-		err = s.AssignRepository.Assign(ctx, users.UidUser.String(), "user-default", "common-user,no-topup-balance,check-wallet,topup-wallet,list-product,create-trx")
+		err = s.AssignRepository.Assign(ctx, users.UidUser.String(), "user-default", "common-user,check-wallet,topup-wallet,list-product-default,create-trx")
 		if err != nil {
 			return "error assign", sc, status, err
 		}
