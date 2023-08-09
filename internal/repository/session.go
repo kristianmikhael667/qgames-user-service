@@ -33,20 +33,47 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", uid_users).First(&sessions).Error; err != nil {
 		// Create sesssion for new user
 		newSession := model.Session{
-			UserId:    uid_users,
-			DeviceId:  device_id,
-			LoginInAt: time.Now(),
+			UserId:       uid_users,
+			DeviceId:     device_id,
+			LoginInAt:    time.Now(),
+			Status:       true,
+			ChangeDevice: nil,
+			LoggedOutAt:  nil,
 		}
 		if err := r.Db.WithContext(ctx).Save(&newSession).Error; err != nil {
 			return "Failed create session", 500, "Error", err
 		}
 		return msg, 201, otp, nil
 	}
-	// Already Device
-	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("device_id = ?", device_id).First(&sessions).Error; err != nil {
+	// Already Device 403, when user active
+
+	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil {
+		// User sudah ada device id yang sama ketika login
+		return msg, status, otp, nil
+	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil {
+		// User masih login, tapi tiba-tiba ada yg maksa pengen login
 		return "Device Already Login", 403, "Error", nil
+	} else if sessions.LoggedOutAt != nil && sessions.DeviceId != device_id && sessions.Status == false {
+		// User sudah logout di device a tetapi ingin login di device b
+		sessions.Status = true
+		sessions.DeviceId = device_id
+		sessions.LoggedOutAt = nil
+		sessions.LoginInAt = time.Now()
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed update session", 500, otp, nil
+		}
+		return "Login OTP", 201, otp, nil
+	} else {
+		// User logout di device yg sama dan user login dengan device yang sama
+		sessions.Status = true
+		sessions.LoggedOutAt = nil
+		sessions.LoginInAt = time.Now()
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed update session", 500, otp, nil
+		}
+		return msg, status, otp, nil
 	}
-	return msg, status, otp, nil
+
 }
 
 func (r *session) UpdateSession(ctx context.Context, sc int, msg string, session *dto.ReqSessionReset) (string, int, error) {
@@ -61,7 +88,13 @@ func (r *session) UpdateSession(ctx context.Context, sc int, msg string, session
 		return "User ID not found in session", 404, err
 	}
 	sessions.DeviceId = session.DeviceID
-	sessions.ChangeDevice = time.Now()
+	if sessions.ChangeDevice == nil {
+		now := time.Now()
+		sessions.ChangeDevice = &now
+	}
+	if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+		return "Failed update session", 500, err
+	}
 	if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 		return "Failed update session", 500, err
 	}
@@ -86,7 +119,11 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 		return "User ID And Device ID not found in session", 404, err
 	}
 
-	sessions.LoggedOutAt = time.Now()
+	if sessions.LoggedOutAt == nil {
+		now := time.Now()
+		sessions.LoggedOutAt = &now
+	}
+	sessions.Status = false
 	if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 		return "Failed update session", 500, err
 	}
