@@ -273,7 +273,7 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 
 func (s *service) CheckPin(ctx context.Context, token *dto.JWTClaims, loginpin *dto.CheckPin) (bool, int, string, error) {
 	// Step 1. Check Number User
-	users, sc, msg, err := s.UserRepository.MyAccount(ctx, token.ID)
+	users, sc, msg, err := s.UserRepository.MyAccount(ctx, token.Uuid)
 	if err != nil {
 		return false, sc, msg, err
 	}
