@@ -3,6 +3,7 @@ package auth
 import (
 	dto "main/internal/dto"
 	"main/internal/factory"
+	"main/internal/pkg/util"
 	"main/package/util/response"
 
 	"github.com/labstack/echo/v4"
@@ -97,6 +98,33 @@ func (h *handler) LoginPin(c echo.Context) error {
 		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
 	} else {
 		return response.CustomSuccessBuilder(sc, result, msg, nil).Send(c)
+	}
+}
+
+func (h *handler) CheckPin(c echo.Context) error {
+	authHeader := c.Request().Header.Get("Authorization")
+	token, err := util.ParseJWTToken(authHeader)
+	if err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Unauthorized, err).Send(c)
+	}
+
+	payloads := new(dto.CheckPin)
+	if err := c.Bind(payloads); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.NotFound, err).Send(c)
+	}
+	if err := c.Validate(payloads); err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
+	}
+
+	isPin, sc, _, err := h.service.CheckPin(c.Request().Context(), token, payloads)
+	if err != nil {
+		return response.ErrorResponse(err).Send(c)
+	}
+
+	if sc != 201 {
+		return response.CustomErrorBuilder(sc, "error", "Wrong PIN").Send(c)
+	} else {
+		return response.CustomSuccessBuilder(sc, isPin, "True PIN", nil).Send(c)
 	}
 }
 

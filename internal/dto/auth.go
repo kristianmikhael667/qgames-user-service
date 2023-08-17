@@ -28,6 +28,11 @@ type (
 		DeviceId string `json:"device_id" validate:"required"`
 	}
 
+	CheckPin struct {
+		Pin      string `json:"pin" validate:"required"`
+		DeviceId string `json:"device_id" validate:"required"`
+	}
+
 	LoginAdmin struct {
 		Email    string `json:"email" validate:"required,email"`
 		Password string `json:"password" validate:"required"`

@@ -30,6 +30,7 @@ type Service interface {
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*dto.UserWithJWTResponse, string, int, error)
 	ConfirmReset(ctx context.Context, phone *dto.CheckSession) (string, int, error)
 	ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (string, int, error)
+	CheckPin(ctx context.Context, token *dto.JWTClaims, loginpin *dto.CheckPin) (bool, int, string, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -268,6 +269,28 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 		Token: token,
 	}
 	return result, msg, 201, nil
+}
+
+func (s *service) CheckPin(ctx context.Context, token *dto.JWTClaims, loginpin *dto.CheckPin) (bool, int, string, error) {
+	// Step 1. Check Number User
+	users, sc, msg, err := s.UserRepository.MyAccount(ctx, token.ID)
+	if err != nil {
+		return false, sc, msg, err
+	}
+	// Step 2. Check Session and Check Device Id
+	msg, sc, _, _ = s.SessionRepository.CreateSession(ctx, users.UidUser.String(), loginpin.DeviceId, token.Phone, sc, msg)
+	if sc == 403 {
+		return false, sc, msg, err
+	}
+
+	// Step 3. Login Pin
+	isPin, sc, err := s.UserRepository.CheckPin(ctx, token.Phone, loginpin.Pin)
+
+	if err != nil {
+		return isPin, sc, "error pin", err
+	}
+
+	return isPin, sc, msg, nil
 }
 
 func (s *service) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*dto.UserWithJWTResponse, string, int, error) {

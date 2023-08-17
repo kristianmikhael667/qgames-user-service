@@ -24,6 +24,7 @@ type User interface {
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
+	CheckPin(ctx context.Context, phone string, loginpin string) (bool, int, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error)
 	GetUserByNumber(ctx context.Context, phone string) (model.User, int, string, error)
 	MyAccount(ctx context.Context, iduser string) (model.User, int, string, error)
@@ -270,6 +271,54 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 	}
 
 	return user, 201, "Success Login By Pin", nil
+}
+
+func (r *user) CheckPin(ctx context.Context, phone string, loginpin string) (bool, int, error) {
+	var user model.User
+	var trylimit model.Attempt
+
+	phones := strings.Replace(phone, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
+
+	// Validate Phone Number
+	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&user).Error; err != nil {
+		helper.Logger("error", "Number Phone Not Found Users", "Rc: "+string(rune(404)))
+		return false, 404, err
+	}
+
+	// Validate TryLimit
+	timenow := time.Now()
+	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&trylimit).Error; err != nil {
+		// Create Limit
+		newAttemp := model.Attempt{
+			Phone:       phones,
+			PinAttempt:  0,
+			OtpAttempt:  0,
+			LastAttempt: timenow,
+		}
+		if err := r.Db.WithContext(ctx).Save(&newAttemp).Error; err != nil {
+			return false, 500, err
+		}
+	}
+
+	if (!helper.VerifyPin(loginpin, user.Pin)) && (trylimit.PinAttempt < 3) {
+		helper.Logger("error", "Wrong PIN", "Rc: "+string(rune(403)))
+		trylimit.PinAttempt = trylimit.PinAttempt + 1
+		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+			return false, 500, err
+		}
+		return false, 401, nil
+
+	} else if trylimit.PinAttempt == 3 {
+		helper.Logger("error", "Pin 3 times", "Rc: "+string(rune(403)))
+		return false, 403, nil
+	}
+	trylimit.PinAttempt = 0
+	if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
+		return false, 500, err
+	}
+
+	return true, 201, nil
 }
 
 func (r *user) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error) {
