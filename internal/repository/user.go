@@ -248,7 +248,7 @@ func (r *user) VerifyOtpDevice(ctx context.Context, phone string, otps string) (
 		if err := r.Db.WithContext(ctx).Save(&users).Error; err != nil {
 			return users, false, 500, "Failed update status user", err
 		}
-		return users, false, 205, "User Register", nil
+		return users, true, 205, "User Register", nil
 	}
 
 	return users, true, 201, "Success verify OTP", nil
