@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	dto "main/internal/dto"
 	"main/internal/factory"
 	"main/internal/pkg/util"
@@ -181,6 +182,7 @@ func (h *handler) ResetDevice(c echo.Context) error {
 	}
 
 	result, msg, sc, err := h.service.ResetDevice(c.Request().Context(), session)
+	fmt.Println(result)
 	if err != nil {
 		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
 	}
