@@ -185,7 +185,7 @@ func (h *handler) ResetDevice(c echo.Context) error {
 		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
 	}
 
-	if sc != 201 {
+	if sc != 201 && sc != 205 {
 		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
 	}
 	return response.CustomSuccessBuilder(sc, result, msg, nil).Send(c)
