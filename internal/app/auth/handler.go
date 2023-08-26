@@ -190,3 +190,21 @@ func (h *handler) ResetDevice(c echo.Context) error {
 	}
 	return response.CustomSuccessBuilder(sc, "reset-device", msg, nil).Send(c)
 }
+
+func (h *handler) RefreshToken(c echo.Context) error {
+	authHeader := c.Request().Header.Get("Authorization")
+	token, err := util.ParseJWTToken(authHeader)
+	if err != nil {
+		return response.ErrorBuilder(&response.ErrorConstant.Unauthorized, err).Send(c)
+	}
+
+	isToken, sc, _, err := h.service.RefreshToken(c.Request().Context(), token)
+	if err != nil {
+		return response.ErrorResponse(err).Send(c)
+	}
+	if sc != 201 {
+		return response.CustomErrorBuilder(sc, "error", "Error Refresh Token").Send(c)
+	} else {
+		return response.CustomSuccessBuilder(sc, isToken, "Success Refresh Token", nil).Send(c)
+	}
+}

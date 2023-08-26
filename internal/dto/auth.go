@@ -33,6 +33,10 @@ type (
 		DeviceId string `json:"device_id" validate:"required"`
 	}
 
+	RefreshToken struct {
+		NewToken string `json:"new_token" validate:"required"`
+	}
+
 	LoginAdmin struct {
 		Email    string `json:"email" validate:"required,email"`
 		Password string `json:"password" validate:"required"`

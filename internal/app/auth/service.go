@@ -31,6 +31,7 @@ type Service interface {
 	ConfirmReset(ctx context.Context, phone *dto.CheckSession) (string, int, error)
 	ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (string, int, error)
 	CheckPin(ctx context.Context, token *dto.JWTClaims, loginpin *dto.CheckPin) (bool, int, string, error)
+	RefreshToken(ctx context.Context, oldtoken *dto.JWTClaims) (*dto.UserWithJWTResponse, int, string, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -367,4 +368,49 @@ func (s *service) ResetDevice(ctx context.Context, session *dto.ReqSessionReset)
 		return msg, sc, err
 	}
 	return msg, sc, nil
+}
+
+func (s *service) RefreshToken(ctx context.Context, oldtoken *dto.JWTClaims) (*dto.UserWithJWTResponse, int, string, error) {
+	var result *dto.UserWithJWTResponse
+
+	// Get Users
+	users, sc, msg, err := s.UserRepository.MyAccount(ctx, oldtoken.Uuid)
+	if err != nil {
+		return result, sc, msg, err
+	}
+
+	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, users.UidUser.String())
+
+	if err != nil {
+		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+	}
+
+	firstRole := response_assign[0].Roles
+
+	var permissions []string
+	for _, assign := range response_assign {
+		permissions = append(permissions, assign.Permissions)
+	}
+
+	claims := util.CreateJWTClaims(users.UidUser.String(), users.Email, users.Phone, firstRole, permissions, false)
+
+	token, err := util.CreateJWTToken(claims)
+	if err != nil {
+		return result, sc, msg, err
+	}
+
+	result = &dto.UserWithJWTResponse{
+		UsersResponse: dto.UsersResponse{
+			Uuid:      users.UidUser.String(),
+			Fullname:  users.Fullname,
+			Phone:     users.Phone,
+			Email:     users.Email,
+			Address:   users.Address,
+			Profile:   users.Profile,
+			CreatedAt: users.CreatedAt,
+			UpdatedAt: users.UpdatedAt,
+		},
+		Token: token,
+	}
+	return result, 201, msg, nil
 }

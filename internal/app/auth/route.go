@@ -23,4 +23,5 @@ func (h *handler) Route(g *echo.Group) {
 	// Use Token
 	g.Use(middleware.JWTMiddleware(dto.JWTClaims{}, util.JWT_SECRET))
 	g.POST("/check-pin", h.CheckPin)
+	g.POST("/refresh-token", h.RefreshToken)
 }
