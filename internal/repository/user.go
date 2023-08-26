@@ -22,7 +22,7 @@ type User interface {
 	ExistByPhone(ctx context.Context, email string) (bool, error)
 	CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
-	VerifyOtpDevice(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
+	VerifyOtpDevice(ctx context.Context, phone string, otps string) (model.User, bool, int, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
 	CheckPin(ctx context.Context, phone string, loginpin string) (bool, int, error)
@@ -198,7 +198,7 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	return users, true, "Success verify OTP", nil
 }
 
-func (r *user) VerifyOtpDevice(ctx context.Context, phone string, otps string) (model.User, bool, string, error) {
+func (r *user) VerifyOtpDevice(ctx context.Context, phone string, otps string) (model.User, bool, int, string, error) {
 	var otp model.Otp
 	var users model.User
 
@@ -207,7 +207,7 @@ func (r *user) VerifyOtpDevice(ctx context.Context, phone string, otps string) (
 
 	if err := r.Db.WithContext(ctx).Model(&model.Otp{}).Where("phone = ?", phones).Order("created_at DESC").First(&otp).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return users, false, "Sorry, your OTP has expired", err
+			return users, false, 500, "Sorry, your OTP has expired", err
 		}
 	}
 
@@ -222,18 +222,18 @@ func (r *user) VerifyOtpDevice(ctx context.Context, phone string, otps string) (
 
 	if minutesPassed <= expiredminute {
 		helper.Logger("error", "Expired Otp : "+string(rune(403)), "Rc: "+string(rune(403)))
-		return users, false, "Expired Otp", nil
+		return users, false, 403, "Expired Otp", nil
 	}
 
 	// Get users
 	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phones).First(&users).Error; err != nil {
 		helper.Logger("error", "Number not found", "Rc: "+string(rune(403)))
-		return users, false, "Number not found", err
+		return users, false, 500, "Number not found", err
 	}
 	// Compare OTP
 	check := helper.VerifyOtp(phones, otps, otp.Otp)
 	if check == false {
-		return model.User{}, false, "Failed verify otp reset device", nil
+		return model.User{}, false, 400, "Failed verify otp", nil
 	}
 
 	// If success delete otp
@@ -242,7 +242,16 @@ func (r *user) VerifyOtpDevice(ctx context.Context, phone string, otps string) (
 		fmt.Println("Error:", result.Error)
 	}
 
-	return users, true, "Success verify OTP Reset Device", nil
+	// Update User
+	if users.Fullname == "" && users.Pin == "" {
+		users.Status = "active"
+		if err := r.Db.WithContext(ctx).Save(&users).Error; err != nil {
+			return users, false, 500, "Failed update status user", err
+		}
+		return users, false, 205, "User Register", nil
+	}
+
+	return users, true, 201, "Success verify OTP", nil
 }
 
 func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error) {
