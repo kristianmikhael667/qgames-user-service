@@ -29,7 +29,7 @@ type Service interface {
 	LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*dto.UserWithJWTResponse, string, int, error)
 	ConfirmReset(ctx context.Context, phone *dto.CheckSession) (string, int, error)
-	ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (string, int, error)
+	ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (*dto.UserWithJWTResponse, string, int, error)
 	CheckPin(ctx context.Context, token *dto.JWTClaims, loginpin *dto.CheckPin) (bool, int, string, error)
 	RefreshToken(ctx context.Context, oldtoken *dto.JWTClaims) (*dto.UserWithJWTResponse, int, string, error)
 }
@@ -349,25 +349,68 @@ func (s *service) ConfirmReset(ctx context.Context, phone *dto.CheckSession) (st
 	return "Send OTP Reset", sc, nil
 }
 
-func (s *service) ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (string, int, error) {
+func (s *service) ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (*dto.UserWithJWTResponse, string, int, error) {
+	var result *dto.UserWithJWTResponse
+
 	// Step 1. Check Verify OTP
-	_, verifyOtp, scdev, msg, err := s.UserRepository.VerifyOtpDevice(ctx, session.Phone, session.Otp)
+	response, verifyOtp, scdev, msg, err := s.UserRepository.VerifyOtpDevice(ctx, session.Phone, session.Otp)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
-		return msg, scdev, err
+		return result, msg, scdev, err
 	}
 	if verifyOtp == false {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
-		return msg, scdev, err
+		return result, msg, scdev, err
+	}
+
+	// Get all assign and loop
+	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, response.UidUser.String())
+
+	if err != nil {
+		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+	}
+
+	firstRole := response_assign[0].Roles
+
+	var permissions []string
+	for _, assign := range response_assign {
+		permissions = append(permissions, assign.Permissions)
+	}
+
+	claims := util.CreateJWTClaims(response.UidUser.String(), response.Email, response.Phone, firstRole, permissions, false)
+
+	// Update Limit
+	statuscode, msg, err := s.AttemptRepository.UpdateAttemptOtp(ctx, response.Phone)
+	if statuscode != 201 {
+		return result, msg, int(statuscode), err
+	}
+
+	token, err := util.CreateJWTToken(claims)
+	if err != nil {
+		return result, msg, 401, err
+	}
+
+	result = &dto.UserWithJWTResponse{
+		UsersResponse: dto.UsersResponse{
+			Uuid:      response.UidUser.String(),
+			Fullname:  response.Fullname,
+			Phone:     response.Phone,
+			Email:     response.Email,
+			Address:   response.Address,
+			Profile:   response.Profile,
+			CreatedAt: response.CreatedAt,
+			UpdatedAt: response.UpdatedAt,
+		},
+		Token: token,
 	}
 
 	// Step 2. Update Device ID
 	msg, sc, err := s.SessionRepository.UpdateSession(ctx, 200, msg, session)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
-		return msg, sc, err
+		return result, msg, sc, err
 	}
-	return msg, sc, nil
+	return result, msg, sc, nil
 }
 
 func (s *service) RefreshToken(ctx context.Context, oldtoken *dto.JWTClaims) (*dto.UserWithJWTResponse, int, string, error) {

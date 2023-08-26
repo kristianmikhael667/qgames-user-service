@@ -180,7 +180,7 @@ func (h *handler) ResetDevice(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	msg, sc, err := h.service.ResetDevice(c.Request().Context(), session)
+	result, msg, sc, err := h.service.ResetDevice(c.Request().Context(), session)
 	if err != nil {
 		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
 	}
@@ -188,7 +188,7 @@ func (h *handler) ResetDevice(c echo.Context) error {
 	if sc != 201 {
 		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
 	}
-	return response.CustomSuccessBuilder(sc, "reset-device", msg, nil).Send(c)
+	return response.CustomSuccessBuilder(sc, result, msg, nil).Send(c)
 }
 
 func (h *handler) RefreshToken(c echo.Context) error {
