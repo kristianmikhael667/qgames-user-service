@@ -105,6 +105,15 @@ func (r *session) UpdateSession(ctx context.Context, sc int, msg string, session
 	if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
 		return "Failed update attempt", 500, err
 	}
+
+	// Update User
+	if users.Fullname == "" && users.Pin == "" {
+		users.Status = "active"
+		if err := r.Db.WithContext(ctx).Save(&users).Error; err != nil {
+			return "Failed update status user", 500, err
+		}
+		return "User Register", 205, nil
+	}
 	return "Success Reset Device ID", 200, nil
 }
 

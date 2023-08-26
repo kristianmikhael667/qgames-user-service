@@ -353,14 +353,14 @@ func (s *service) ResetDevice(ctx context.Context, session *dto.ReqSessionReset)
 	var result *dto.UserWithJWTResponse
 
 	// Step 1. Check Verify OTP
-	response, verifyOtp, scdev, msg, err := s.UserRepository.VerifyOtpDevice(ctx, session.Phone, session.Otp)
+	response, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, session.Phone, session.Otp)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
-		return result, msg, scdev, err
+		return result, msg, 403, err
 	}
 	if verifyOtp == false {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
-		return result, msg, scdev, err
+		return result, msg, 403, err
 	}
 
 	// Get all assign and loop

@@ -181,12 +181,11 @@ func (h *handler) ResetDevice(c echo.Context) error {
 	}
 
 	result, msg, sc, err := h.service.ResetDevice(c.Request().Context(), session)
-
 	if err != nil {
 		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
 	}
 
-	if sc != 201 && sc != 205 {
+	if sc != 201 && sc != 200 && sc != 205 {
 		return response.CustomErrorBuilder(sc, "Error", msg).Send(c)
 	}
 	return response.CustomSuccessBuilder(sc, result, msg, nil).Send(c)
