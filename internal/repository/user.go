@@ -22,6 +22,7 @@ type User interface {
 	ExistByPhone(ctx context.Context, email string) (bool, error)
 	CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
+	VerifyOtpDevice(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
 	CheckPin(ctx context.Context, phone string, loginpin string) (bool, int, error)
@@ -195,6 +196,53 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	}
 
 	return users, true, "Success verify OTP", nil
+}
+
+func (r *user) VerifyOtpDevice(ctx context.Context, phone string, otps string) (model.User, bool, string, error) {
+	var otp model.Otp
+	var users model.User
+
+	phones := strings.Replace(phone, "+62", "0", -1)
+	phones = strings.Replace(phones, "62", "0", -1)
+
+	if err := r.Db.WithContext(ctx).Model(&model.Otp{}).Where("phone = ?", phones).Order("created_at DESC").First(&otp).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return users, false, "Sorry, your OTP has expired", err
+		}
+	}
+
+	// Set 2 minute
+	expiredminute := 2
+
+	currentTime := time.Now()
+	expiredOtp := otp.ExpiredAt
+
+	diff := expiredOtp.Sub(currentTime)
+	minutesPassed := int(diff.Seconds())
+
+	if minutesPassed <= expiredminute {
+		helper.Logger("error", "Expired Otp : "+string(rune(403)), "Rc: "+string(rune(403)))
+		return users, false, "Expired Otp", nil
+	}
+
+	// Get users
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phones).First(&users).Error; err != nil {
+		helper.Logger("error", "Number not found", "Rc: "+string(rune(403)))
+		return users, false, "Number not found", err
+	}
+	// Compare OTP
+	check := helper.VerifyOtp(phones, otps, otp.Otp)
+	if check == false {
+		return model.User{}, false, "Failed verify otp reset device", nil
+	}
+
+	// If success delete otp
+	result := r.Db.Debug().Unscoped().Where("phone = ?", phones).Delete(&model.Otp{})
+	if result.Error != nil {
+		fmt.Println("Error:", result.Error)
+	}
+
+	return users, true, "Success verify OTP Reset Device", nil
 }
 
 func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error) {

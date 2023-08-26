@@ -351,7 +351,7 @@ func (s *service) ConfirmReset(ctx context.Context, phone *dto.CheckSession) (st
 
 func (s *service) ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (string, int, error) {
 	// Step 1. Check Verify OTP
-	_, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, session.Phone, session.Otp)
+	_, verifyOtp, msg, err := s.UserRepository.VerifyOtpDevice(ctx, session.Phone, session.Otp)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
 		return msg, 403, err
