@@ -381,7 +381,7 @@ func (s *service) ResetDevice(ctx context.Context, session *dto.ReqSessionReset)
 
 	// Update Limit
 	statuscode, msg, err := s.AttemptRepository.UpdateAttemptOtp(ctx, response.Phone)
-	if statuscode != 201 {
+	if statuscode != 201 && statuscode != 205 {
 		return result, msg, int(statuscode), err
 	}
 
