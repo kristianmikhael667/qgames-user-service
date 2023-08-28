@@ -14,7 +14,7 @@ import (
 
 var (
 	JWT_SECRET         = []byte(util.Getenv("JWT_SECRET", "testsecret"))
-	JWT_EXP            = time.Duration(48) * time.Hour
+	JWT_EXP            = time.Duration(168) * time.Hour
 	JWT_SIGNING_METHOD = jwt.SigningMethodHS256
 )
 
