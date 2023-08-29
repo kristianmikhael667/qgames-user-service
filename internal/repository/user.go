@@ -148,6 +148,11 @@ func (r *user) CreateUsers(ctx context.Context, phone string, device_id string) 
 
 func (r *user) CheckUser(ctx context.Context, phone string) (model.User, int16, bool, string, error) {
 	var users model.User
+
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phone).First(&users).Error; err != nil {
+		return users, 404, false, "Users not found with checkuser", nil
+	}
+
 	if users.Fullname == "" && users.Pin == "" && users.Email == "" && users.Address == "" {
 		// user not complate regist, ketika input nomor lagi, maka akan diarahkan ke page regist code 205 Reset Content
 		return users, 205, true, "Uncomplate register users, please full regist", nil
