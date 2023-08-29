@@ -21,6 +21,7 @@ type User interface {
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
 	CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error)
+	CheckUser(ctx context.Context, phone string) (model.User, int16, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
@@ -140,8 +141,19 @@ func (r *user) CreateUsers(ctx context.Context, phone string, device_id string) 
 	} else if users.Fullname == "" && users.Pin == "" && users.Email == "" && users.Address == "" {
 		// user not complate regist, ketika input nomor lagi, maka akan diarahkan ke page regist code 205 Reset Content
 		return users, 205, status_user, "Uncomplate register users, please full regist", nil
+	} else {
+		return users, 200, false, "Users valid with pin", nil
 	}
-	return users, 200, false, "Users valid with pin", nil
+}
+
+func (r *user) CheckUser(ctx context.Context, phone string) (model.User, int16, bool, string, error) {
+	var users model.User
+	if users.Fullname == "" && users.Pin == "" && users.Email == "" && users.Address == "" {
+		// user not complate regist, ketika input nomor lagi, maka akan diarahkan ke page regist code 205 Reset Content
+		return users, 205, true, "Uncomplate register users, please full regist", nil
+	} else {
+		return users, 201, false, "Users valid with pin", nil
+	}
 }
 
 func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error) {

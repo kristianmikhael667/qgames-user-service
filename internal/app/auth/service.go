@@ -171,6 +171,9 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 		return result, msg, 401, err
 	}
 
+	// Check number
+	_, sc, _, msg, err := s.UserRepository.CheckUser(ctx, response.Phone)
+
 	// Get all assign and loop
 	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, response.UidUser.String())
 
@@ -211,7 +214,7 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 		},
 		Token: token,
 	}
-	return result, msg, 201, nil
+	return result, msg, sc, nil
 }
 
 func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error) {
