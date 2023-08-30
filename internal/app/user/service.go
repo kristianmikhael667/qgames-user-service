@@ -7,7 +7,6 @@ import (
 	"main/internal/factory"
 	repository "main/internal/repository"
 	pkgdto "main/package/dto"
-	utils "main/package/util"
 	res "main/package/util/response"
 )
 
@@ -79,15 +78,6 @@ func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersR
 
 func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error) {
 	var user_data *dto.UsersResponse
-
-	// Get Users Pin Tester QA
-	if iduser == utils.Getenv("UUID_USER_FAKE", "000") {
-		helpers, sc, msg, err := helper.AuditProfilePlayStore(user_data)
-		if err != nil {
-			return helpers, sc, msg, err
-		}
-		return helpers, sc, msg, nil
-	}
 
 	users, sc, msg, err := s.UserRepository.MyAccount(ctx, iduser)
 	if err != nil {

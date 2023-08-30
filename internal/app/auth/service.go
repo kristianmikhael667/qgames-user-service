@@ -169,7 +169,20 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 
 	// If Number Tester
 	if validotp.Phone == utils.Getenv("NUMBER_FAKE", "000") {
-		helpers, sc, msg, err := helper.AuditOTPPlayStore(result, validotp)
+		datausers, sc, _, msg, err := s.UserRepository.CheckUser(ctx, utils.Getenv("NUMBER_FAKE", "000"))
+		if err != nil {
+			helper.Logger("error", msg+" User Tester", "Rc: "+string(rune(403)))
+			return result, msg, sc, err
+		}
+
+		// Get all assign and loop
+		response_assign, err := s.AssignRepository.GetAssignUsers(ctx, datausers.UidUser.String())
+
+		if err != nil {
+			helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+		}
+
+		helpers, sc, msg, err := helper.AuditOTPPlayStore(datausers, response_assign, result, validotp)
 		if err != nil {
 			return result, msg, sc, err
 		}
@@ -235,15 +248,6 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 
 func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error) {
 	var result *dto.UserWithJWTResponse
-
-	// Login Pin Tester QA
-	if loginpin.Phone == utils.Getenv("NUMBER_FAKE", "000") {
-		helpers, sc, msg, err := helper.AuditPINPlayStore(result, loginpin)
-		if err != nil {
-			return result, msg, sc, err
-		}
-		return helpers, msg, sc, nil
-	}
 
 	// Step 1. Check Number User
 	users, sc, msg, err := s.UserRepository.GetUserByNumber(ctx, loginpin.Phone)
