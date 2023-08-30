@@ -123,11 +123,6 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 	phones := strings.Replace(phone.Phone, "+62", "0", -1)
 	phones = strings.Replace(phones, "62", "0", -1)
 
-	// If Number Tester
-	if phones == utils.Getenv("NUMBER_FAKE", "000") {
-		return "Success Request OTP Audit Tester", 201, true, nil
-	}
-
 	// Step 2. Check Attempt
 	trylimit, sc, msg, err := s.AttemptRepository.CreateAttempt(ctx, phones)
 
