@@ -24,6 +24,7 @@ type User interface {
 	CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error)
 	CheckUser(ctx context.Context, phone string) (model.User, int16, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
+	VerifyOtpAuditTester(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
 	LoginByPinAuditQA(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
@@ -170,18 +171,6 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	phones := strings.Replace(phone, "+62", "0", -1)
 	phones = strings.Replace(phones, "62", "0", -1)
 
-	// Number Audit QA
-	err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", util.Getenv("NUMBER_FAKE", "000000")).Order("created_at DESC").First(&users).Error
-	if err == nil && otps == util.Getenv("OTP_FAKE", "000000") {
-		return users, true, "Success your OTP audit tester", nil
-	}
-
-	if err := r.Db.WithContext(ctx).Model(&model.Otp{}).Where("phone = ?", phones).Order("created_at DESC").First(&otp).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return users, false, "Sorry, your OTP has expired", err
-		}
-	}
-
 	// Set 2 minute
 	expiredminute := 2
 
@@ -220,6 +209,16 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	}
 
 	return users, true, "Success verify OTP", nil
+}
+
+func (r *user) VerifyOtpAuditTester(ctx context.Context, phone string, otps string) (model.User, bool, string, error) {
+	// Number Audit QA
+	var users model.User
+	err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", phone).Order("created_at DESC").First(&users).Error
+	if err == nil && otps == util.Getenv("OTP_FAKE", "000000") {
+		return users, true, "Success your OTP audit tester", nil
+	}
+	return users, false, "Your OTP was wrong for audit tester", err
 }
 
 func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error) {

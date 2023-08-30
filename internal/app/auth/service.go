@@ -166,6 +166,58 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 
 func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error) {
 	var result *dto.UserWithJWTResponse
+	// Check OTP Audit QA
+	// If Number Tester
+	if validotp.Phone == utils.Getenv("NUMBER_FAKE", "000") {
+		responseqa, verifyOtp, msg, err_qa := s.UserRepository.VerifyOtpAuditTester(ctx, validotp.Phone, validotp.Otp)
+		if err_qa != nil && verifyOtp == false {
+			helper.Logger("error", msg, "Rc: "+string(rune(403)))
+			return result, msg, 403, err_qa
+		}
+
+		// Get all assign and loop
+		response_assign, err := s.AssignRepository.GetAssignUsers(ctx, responseqa.UidUser.String())
+
+		if err != nil {
+			helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+		}
+
+		firstRole := response_assign[0].Roles
+
+		var permissions []string
+		for _, assign := range response_assign {
+			permissions = append(permissions, assign.Permissions)
+		}
+
+		claims := util.CreateJWTClaims(responseqa.UidUser.String(), responseqa.Email, responseqa.Phone, firstRole, permissions, false)
+
+		// Update Limit
+		statuscode, msg, err := s.AttemptRepository.UpdateAttemptOtp(ctx, validotp.Phone)
+		if statuscode != 201 {
+			return result, msg, statuscode, err
+		}
+
+		token, err := util.CreateJWTToken(claims)
+		if err != nil {
+			return result, msg, 401, err
+		}
+
+		result = &dto.UserWithJWTResponse{
+			UsersResponse: dto.UsersResponse{
+				Uuid:      responseqa.UidUser.String(),
+				Fullname:  responseqa.Fullname,
+				Phone:     responseqa.Phone,
+				Email:     responseqa.Email,
+				Address:   responseqa.Address,
+				Profile:   responseqa.Profile,
+				CreatedAt: responseqa.CreatedAt,
+				UpdatedAt: responseqa.UpdatedAt,
+			},
+			Token: token,
+		}
+		return result, msg, 201, nil
+	}
+
 	// Check OTP
 	response, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, validotp.Phone, validotp.Otp)
 	if err != nil {
@@ -227,9 +279,13 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 	var result *dto.UserWithJWTResponse
 
 	// Login Pin Tester QA
-	users, sc_tester, msg_tester, err := s.UserRepository.LoginByPinAuditQA(ctx, loginpin)
-	if sc_tester == 201 {
-		response_assign, err := s.AssignRepository.GetAssignUsers(ctx, users.UidUser.String())
+	if loginpin.Phone == utils.Getenv("NUMBER_FAKE", "000") {
+		usersqa, sc_tester, msg_tester, err := s.UserRepository.LoginByPinAuditQA(ctx, loginpin)
+		if err != nil {
+			return result, msg_tester, sc_tester, err
+		}
+
+		response_assign, err := s.AssignRepository.GetAssignUsers(ctx, usersqa.UidUser.String())
 
 		if err != nil {
 			helper.Logger("error", "Error get assign user service for audit tester", "Rc: "+string(rune(403)))
@@ -241,7 +297,7 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 			permissions = append(permissions, assign.Permissions)
 		}
 
-		claims := util.CreateJWTClaims(users.UidUser.String(), users.Email, users.Phone, firstRole, permissions, false)
+		claims := util.CreateJWTClaims(usersqa.UidUser.String(), usersqa.Email, usersqa.Phone, firstRole, permissions, false)
 
 		token, err := util.CreateJWTToken(claims)
 		if err != nil {
@@ -250,14 +306,14 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 
 		result = &dto.UserWithJWTResponse{
 			UsersResponse: dto.UsersResponse{
-				Uuid:      users.UidUser.String(),
-				Fullname:  users.Fullname,
-				Phone:     users.Phone,
-				Email:     users.Email,
-				Address:   users.Address,
-				Profile:   users.Profile,
-				CreatedAt: users.CreatedAt,
-				UpdatedAt: users.UpdatedAt,
+				Uuid:      usersqa.UidUser.String(),
+				Fullname:  usersqa.Fullname,
+				Phone:     usersqa.Phone,
+				Email:     usersqa.Email,
+				Address:   usersqa.Address,
+				Profile:   usersqa.Profile,
+				CreatedAt: usersqa.CreatedAt,
+				UpdatedAt: usersqa.UpdatedAt,
 				Roles:     firstRole,
 			},
 			Token: token,
