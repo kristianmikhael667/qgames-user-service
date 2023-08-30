@@ -168,6 +168,12 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	phones := strings.Replace(phone, "+62", "0", -1)
 	phones = strings.Replace(phones, "62", "0", -1)
 
+	if err := r.Db.WithContext(ctx).Model(&model.Otp{}).Where("phone = ?", phones).Order("created_at DESC").First(&otp).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return users, false, "Sorry, your OTP has expired", err
+		}
+	}
+
 	// Set 2 minute
 	expiredminute := 2
 
