@@ -77,3 +77,18 @@ func AuditPINPlayStore(result *dto.UserWithJWTResponse, validpin *dto.LoginByPin
 	}
 	return result, 201, "Success PIN Helper Audit", nil
 }
+
+func AuditProfilePlayStore(result *dto.UsersResponse) (*dto.UsersResponse, int, string, error) {
+	user_data := &dto.UsersResponse{
+		Uuid:      utils.Getenv("UUID_USER_FAKE", "000"),
+		Fullname:  utils.Getenv("FULLNAME_FAKE", "000"),
+		Phone:     utils.Getenv("NUMBER_FAKE", "000"),
+		Email:     utils.Getenv("EMAIL_FAKE", "000"),
+		Address:   "JAKARTA",
+		Profile:   "",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Roles:     "user-default",
+	}
+	return user_data, 200, "Get User Helper Audit", nil
+}
