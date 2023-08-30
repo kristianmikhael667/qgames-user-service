@@ -98,7 +98,7 @@ func (r *user) ExistByEmail(ctx context.Context, email *string) (bool, error) {
 
 func (r *user) ExistByPhone(ctx context.Context, numbers string) (bool, error) {
 	phones := strings.Replace(numbers, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	var (
 		count   int64
@@ -166,7 +166,7 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	var users model.User
 
 	phones := strings.Replace(phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	if err := r.Db.WithContext(ctx).Model(&model.Otp{}).Where("phone = ?", phones).Order("created_at DESC").First(&otp).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -248,7 +248,7 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 	var trylimit model.Attempt
 
 	phones := strings.Replace(loginpin.Phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	// Validate Phone Number
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&user).Error; err != nil {
@@ -295,7 +295,7 @@ func (r *user) CheckPin(ctx context.Context, phone string, loginpin string) (boo
 	var trylimit model.Attempt
 
 	phones := strings.Replace(phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	// Validate Phone Number
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&user).Error; err != nil {
@@ -356,7 +356,7 @@ func (r *user) GetUserByNumber(ctx context.Context, phone string) (model.User, i
 	var user model.User
 
 	phones := strings.Replace(phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).Find(&user).Error; err != nil {
 		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))

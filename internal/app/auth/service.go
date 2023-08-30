@@ -121,7 +121,7 @@ func (s *service) CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequ
 func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, int, bool, error) {
 	// Step 1. Number Check Regex
 	phones := strings.Replace(phone.Phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	// Step 2. Check Attempt
 	trylimit, sc, msg, err := s.AttemptRepository.CreateAttempt(ctx, phones)
@@ -359,7 +359,7 @@ func (s *service) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*
 func (s *service) ConfirmReset(ctx context.Context, phone *dto.CheckSession) (string, int, error) {
 	// Step 1. Number Check Regex
 	phones := strings.Replace(phone.Phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	// Step 2. Check Attempt
 	trylimit, sc, msg, err := s.AttemptRepository.CreateAttempt(ctx, phones)

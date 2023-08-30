@@ -49,7 +49,7 @@ func (r *attempt) UpdateAttemptOtp(ctx context.Context, phone string) (int16, st
 	var attemp model.Attempt
 
 	phones := strings.Replace(phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	if err := r.Db.WithContext(ctx).Model(&model.Attempt{}).Where("phone = ?", phones).First(&attemp).Error; err != nil {
 		return 404, "Error get phone attemp", err
