@@ -208,7 +208,7 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	// Update User
 	users.Status = "active"
 	if err := r.Db.WithContext(ctx).Save(&users).Error; err != nil {
-		return users, false, "Failed update status user", err
+		return users, false, "Failed Created status user", err
 	}
 
 	return users, true, "Success verify OTP", nil
@@ -237,10 +237,10 @@ func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.Update
 	user.Pin = string(hashedPin)
 
 	if err := r.Db.WithContext(ctx).Save(&user).Error; err != nil {
-		return user, 400, "Failed Update User", err
+		return user, 400, "Failed Created User", err
 	}
 
-	return user, 201, "Success Update User", nil
+	return user, 201, "Success Created User", nil
 }
 
 func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error) {
