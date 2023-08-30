@@ -7,6 +7,7 @@ import (
 	dto "main/internal/dto"
 	model "main/internal/model"
 	pkgdto "main/package/dto"
+	"main/package/util"
 	"main/package/util/response"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ type User interface {
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
+	LoginByPinAuditQA(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
 	CheckPin(ctx context.Context, phone string, loginpin string) (bool, int, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error)
 	GetUserByNumber(ctx context.Context, phone string) (model.User, int, string, error)
@@ -168,6 +170,12 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	phones := strings.Replace(phone, "+62", "0", -1)
 	phones = strings.Replace(phones, "62", "0", -1)
 
+	// Number Audit QA
+	err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", util.Getenv("NUMBER_FAKE", "000000")).Order("created_at DESC").First(&users).Error
+	if err == nil && otps == util.Getenv("OTP_FAKE", "000000") {
+		return users, true, "Success your OTP audit tester", nil
+	}
+
 	if err := r.Db.WithContext(ctx).Model(&model.Otp{}).Where("phone = ?", phones).Order("created_at DESC").First(&otp).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return users, false, "Sorry, your OTP has expired", err
@@ -288,6 +296,17 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 	}
 
 	return user, 201, "Success Login By Pin", nil
+}
+
+func (r *user) LoginByPinAuditQA(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error) {
+	var user model.User
+	// Number Audit QA
+	err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", util.Getenv("NUMBER_FAKE", "000000")).Order("created_at DESC").First(&user).Error
+	if err != nil && loginpin.Pin == util.Getenv("OTP_FAKE", "000000") {
+		return user, 201, "Success Login By Pin Audit Tester", nil
+	}
+	return user, 401, "Failed Login By Pin Audit Tester", nil
+
 }
 
 func (r *user) CheckPin(ctx context.Context, phone string, loginpin string) (bool, int, error) {

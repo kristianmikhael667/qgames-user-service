@@ -47,6 +47,10 @@ type (
 		DeviceId string `json:"device_id" validate:"required"`
 	}
 
+	PhoneAuditTester struct {
+		Phone string `json:"phone" validate:"required"`
+	}
+
 	CheckSession struct {
 		Phone string `json:"phone" validate:"required"`
 	}

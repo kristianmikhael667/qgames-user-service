@@ -9,6 +9,7 @@ import (
 	"main/internal/pkg/util"
 	repository "main/internal/repository"
 	pkgutil "main/package/util"
+	utils "main/package/util"
 	"main/package/util/response"
 	"strings"
 )
@@ -122,6 +123,11 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 	phones := strings.Replace(phone.Phone, "+62", "0", -1)
 	phones = strings.Replace(phones, "62", "0", -1)
 
+	// If Number Tester
+	if phones == utils.Getenv("NUMBER_FAKE", "000") {
+		return "Success Request OTP Audit Tester", 201, true, nil
+	}
+
 	// Step 2. Check Attempt
 	trylimit, sc, msg, err := s.AttemptRepository.CreateAttempt(ctx, phones)
 
@@ -219,6 +225,46 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 
 func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error) {
 	var result *dto.UserWithJWTResponse
+
+	// Login Pin Tester QA
+	users, sc_tester, msg_tester, err := s.UserRepository.LoginByPinAuditQA(ctx, loginpin)
+	if sc_tester == 201 {
+		response_assign, err := s.AssignRepository.GetAssignUsers(ctx, users.UidUser.String())
+
+		if err != nil {
+			helper.Logger("error", "Error get assign user service for audit tester", "Rc: "+string(rune(403)))
+		}
+		firstRole := response_assign[0].Roles
+
+		var permissions []string
+		for _, assign := range response_assign {
+			permissions = append(permissions, assign.Permissions)
+		}
+
+		claims := util.CreateJWTClaims(users.UidUser.String(), users.Email, users.Phone, firstRole, permissions, false)
+
+		token, err := util.CreateJWTToken(claims)
+		if err != nil {
+			return result, msg_tester, 401, err
+		}
+
+		result = &dto.UserWithJWTResponse{
+			UsersResponse: dto.UsersResponse{
+				Uuid:      users.UidUser.String(),
+				Fullname:  users.Fullname,
+				Phone:     users.Phone,
+				Email:     users.Email,
+				Address:   users.Address,
+				Profile:   users.Profile,
+				CreatedAt: users.CreatedAt,
+				UpdatedAt: users.UpdatedAt,
+				Roles:     firstRole,
+			},
+			Token: token,
+		}
+		return result, msg_tester, 201, nil
+	}
+
 	// Step 1. Check Number User
 	users, sc, msg, err := s.UserRepository.GetUserByNumber(ctx, loginpin.Phone)
 	if err != nil {
