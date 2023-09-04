@@ -41,3 +41,11 @@ func AuditOTPPlayStore(datausers model.User, response_assign []model.Assign, res
 	}
 	return result, 201, "Success OTP Helper Audit", nil
 }
+
+func AuditOTPDevicePlayStore(otp string) (string, int, error) {
+	if otp != utils.Getenv("OTP_FAKE", "000000") {
+		return "Wrong OTP Tester", 401, nil
+	}
+
+	return "Send OTP Reset", 201, nil
+}

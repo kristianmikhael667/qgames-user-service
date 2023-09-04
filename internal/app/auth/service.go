@@ -357,19 +357,31 @@ func (s *service) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*
 }
 
 func (s *service) ConfirmReset(ctx context.Context, phone *dto.CheckSession) (string, int, error) {
-	// Step 1. Number Check Regex
-	phones := strings.Replace(phone.Phone, "+62", "0", -1)
-	// phones = strings.Replace(phones, "62", "0", -1)
+	// If Number Tester
+	if phone.Phone == utils.Getenv("NUMBER_FAKE", "000") {
+		_, sc, _, msg, err := s.UserRepository.CheckUser(ctx, utils.Getenv("NUMBER_FAKE", "000"))
+		if err != nil {
+			helper.Logger("error", msg+" User Tester", "Rc: "+string(rune(403)))
+			return msg, int(sc), err
+		}
+
+		otp := utils.Getenv("OTP_FAKE", "")
+		msg, scs, err := helper.AuditOTPDevicePlayStore(otp)
+		if err != nil {
+			return msg, scs, err
+		}
+		return msg, scs, nil
+	}
 
 	// Step 2. Check Attempt
-	trylimit, sc, msg, err := s.AttemptRepository.CreateAttempt(ctx, phones)
+	trylimit, sc, msg, err := s.AttemptRepository.CreateAttempt(ctx, phone.Phone)
 	if err != nil {
 		return msg, sc, err
 	}
 
 	otp := helper.GeneratePin(6)
 
-	msg, sc, err = s.OtpRepository.SendOtp(ctx, phones, 201, otp, trylimit, msg)
+	msg, sc, err = s.OtpRepository.SendOtp(ctx, phone.Phone, 201, otp, trylimit, msg)
 	if err != nil {
 		return msg, sc, err
 	}
