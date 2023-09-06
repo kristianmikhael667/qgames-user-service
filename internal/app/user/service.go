@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 	"main/helper"
 	dto "main/internal/dto"
 	"main/internal/factory"
@@ -102,7 +101,6 @@ func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto
 
 func (s *service) ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error) {
 	var result *dto.UsersResponse
-	fmt.Println("uiddc ", uiduser)
 	// Reset PIN
 	data, sc, msg, err := s.UserRepository.ResetPin(ctx, uiduser, payload)
 

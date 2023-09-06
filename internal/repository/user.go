@@ -21,6 +21,7 @@ type User interface {
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
 	CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error)
+	CheckUser(ctx context.Context, phone string) (model.User, int16, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
 	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
@@ -97,7 +98,7 @@ func (r *user) ExistByEmail(ctx context.Context, email *string) (bool, error) {
 
 func (r *user) ExistByPhone(ctx context.Context, numbers string) (bool, error) {
 	phones := strings.Replace(numbers, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	var (
 		count   int64
@@ -140,8 +141,24 @@ func (r *user) CreateUsers(ctx context.Context, phone string, device_id string) 
 	} else if users.Fullname == "" && users.Pin == "" && users.Email == "" && users.Address == "" {
 		// user not complate regist, ketika input nomor lagi, maka akan diarahkan ke page regist code 205 Reset Content
 		return users, 205, status_user, "Uncomplate register users, please full regist", nil
+	} else {
+		return users, 200, false, "Users valid with pin", nil
 	}
-	return users, 200, false, "Users valid with pin", nil
+}
+
+func (r *user) CheckUser(ctx context.Context, phone string) (model.User, int16, bool, string, error) {
+	var users model.User
+
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phone).First(&users).Error; err != nil {
+		return users, 404, false, "Users not found with checkuser", nil
+	}
+
+	if users.Fullname == "" && users.Pin == "" && users.Email == "" && users.Address == "" {
+		// user not complate regist, ketika input nomor lagi, maka akan diarahkan ke page regist code 205 Reset Content
+		return users, 205, true, "Uncomplate register users, please full regist", nil
+	} else {
+		return users, 201, false, "Users valid with pin", nil
+	}
 }
 
 func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error) {
@@ -149,7 +166,7 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	var users model.User
 
 	phones := strings.Replace(phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	if err := r.Db.WithContext(ctx).Model(&model.Otp{}).Where("phone = ?", phones).Order("created_at DESC").First(&otp).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -191,7 +208,7 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	// Update User
 	users.Status = "active"
 	if err := r.Db.WithContext(ctx).Save(&users).Error; err != nil {
-		return users, false, "Failed update status user", err
+		return users, false, "Failed Created status user", err
 	}
 
 	return users, true, "Success verify OTP", nil
@@ -220,10 +237,10 @@ func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.Update
 	user.Pin = string(hashedPin)
 
 	if err := r.Db.WithContext(ctx).Save(&user).Error; err != nil {
-		return user, 400, "Failed Update User", err
+		return user, 400, "Failed Created User", err
 	}
 
-	return user, 201, "Success Update User", nil
+	return user, 201, "Success Created User", nil
 }
 
 func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error) {
@@ -231,7 +248,7 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 	var trylimit model.Attempt
 
 	phones := strings.Replace(loginpin.Phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	// Validate Phone Number
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&user).Error; err != nil {
@@ -278,7 +295,7 @@ func (r *user) CheckPin(ctx context.Context, phone string, loginpin string) (boo
 	var trylimit model.Attempt
 
 	phones := strings.Replace(phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	// Validate Phone Number
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&user).Error; err != nil {
@@ -339,7 +356,7 @@ func (r *user) GetUserByNumber(ctx context.Context, phone string) (model.User, i
 	var user model.User
 
 	phones := strings.Replace(phone, "+62", "0", -1)
-	phones = strings.Replace(phones, "62", "0", -1)
+	// phones = strings.Replace(phones, "62", "0", -1)
 
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).Find(&user).Error; err != nil {
 		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))

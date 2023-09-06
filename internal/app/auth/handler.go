@@ -73,7 +73,7 @@ func (h *handler) VerifyOtp(c echo.Context) error {
 	}
 
 	checkverify, msg, sc, _ := h.service.VerifyOtp(c.Request().Context(), bodyVerify)
-	if sc != 201 {
+	if sc != 201 && sc != 205 {
 		return response.CustomErrorBuilder(int(sc), "error", msg).Send(c)
 	}
 
