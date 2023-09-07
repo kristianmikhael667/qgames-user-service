@@ -38,7 +38,7 @@ func (r *otp) SendOtp(ctx context.Context, phone string, sc int, otp string, try
 		newOtp := model.Otp{
 			Phone:     phone,
 			Otp:       hashedOtp,
-			ExpiredAt: time.Now().Add(1 * time.Minute),
+			ExpiredAt: time.Now().Add(2 * time.Minute),
 		}
 		if err := r.Db.WithContext(ctx).Save(&newOtp).Error; err != nil {
 			return "Failed create otp", 500, err
