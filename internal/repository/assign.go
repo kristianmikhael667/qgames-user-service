@@ -27,7 +27,7 @@ func NewAssign(db *gorm.DB) *assigns {
 func (a *assigns) FindUserID(ctx context.Context, users string) (model.Assign, error) {
 	var assign model.Assign
 
-	q := a.Db.WithContext(ctx).Model(&model.Permission{}).Where("users = ?", users).First(&assign)
+	q := a.Db.WithContext(ctx).Model(&model.Assign{}).Where("users = ?", users).First(&assign)
 
 	err := q.Error
 
