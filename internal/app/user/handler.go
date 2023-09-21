@@ -52,6 +52,29 @@ func (h *handler) Get(c echo.Context) error {
 	return res.CustomErrorBuilder(403, "Forbidden", "Token not allowed to access").Send(c)
 }
 
+func (h *handler) GetUserId(c echo.Context) error {
+	authHeader := c.Request().Header.Get("Authorization")
+	_, err := util.ParseJWTToken(authHeader)
+	if err != nil {
+		return res.ErrorBuilder(&res.ErrorConstant.Unauthorized, err).Send(c)
+	}
+
+	payload := new(pkgdto.ByIDRequest)
+
+	if err := c.Bind(payload); err != nil {
+		return res.ErrorBuilder(&res.ErrorConstant.BadRequest, err).Send(c)
+	}
+	if err := c.Validate(payload); err != nil {
+		return res.ErrorBuilder(&res.ErrorConstant.Validation, err).Send(c)
+	}
+
+	result, err := h.service.FindIdUser(c.Request().Context(), payload)
+	if err != nil {
+		return response.ErrorResponse(err).Send(c)
+	}
+	return response.CustomSuccessBuilder(200, result, "Get User ID", nil).Send(c)
+}
+
 func (h *handler) UpdateUser(c echo.Context) error {
 	authHeader := c.Request().Header.Get("Authorization")
 	token, err := util.ParseJWTToken(authHeader)
