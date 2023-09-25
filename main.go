@@ -20,6 +20,7 @@ func init() {
 		panic(err)
 	}
 	database.GetConnection()
+	database.GetConnectionMongoDB()
 }
 
 func main() {
