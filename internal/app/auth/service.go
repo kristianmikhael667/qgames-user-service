@@ -534,6 +534,7 @@ func (s *service) RefreshToken(ctx context.Context, oldtoken *dto.JWTClaims) (*d
 			Profile:   users.Profile,
 			CreatedAt: users.CreatedAt,
 			UpdatedAt: users.UpdatedAt,
+			Roles:     firstRole,
 		},
 		Token: token,
 	}
