@@ -8,4 +8,9 @@ type (
 		Permissions string `json:"permissions"`
 		Status      string `json:"status"`
 	}
+
+	ReqAssign struct {
+		Users      string  `json:"users"`
+		PaymentFee float64 `json:"payment_fee"`
+	}
 )

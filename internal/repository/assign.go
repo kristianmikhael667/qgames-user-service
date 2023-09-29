@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"main/helper"
+	"main/internal/dto"
 	model "main/internal/model"
 
 	"gorm.io/gorm"
@@ -12,6 +13,7 @@ type Assign interface {
 	FindUserID(ctx context.Context, users string) (model.Assign, error)
 	Assign(ctx context.Context, users, role, permission string) error
 	GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error)
+	EditRolesTopup(ctx context.Context, payload *dto.ReqAssign) (bool, error)
 }
 
 type assigns struct {
@@ -52,4 +54,48 @@ func (r *assigns) GetAssignUsers(ctx context.Context, uidusers string) ([]model.
 		helper.Logger("error", "Assign Not Found", "Rc: "+string(rune(404)))
 	}
 	return assign, nil
+}
+
+func (r *assigns) EditRolesTopup(ctx context.Context, payload *dto.ReqAssign) (bool, error) {
+	var assign model.Assign
+
+	if err := r.Db.WithContext(ctx).Where("users = ? ", payload.Users).Find(&assign).Error; err != nil {
+		helper.Logger("error", "Assign Users Not Found", "Rc: "+string(rune(404)))
+		return false, err
+	}
+
+	if assign.Roles == "user-default" {
+		if payload.PaymentFee >= 300000 {
+			assign.Roles = "user-basic"
+			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
+				return false, err
+			}
+		}
+	} else if assign.Roles == "user-basic" {
+		if payload.PaymentFee < 300000 {
+			assign.Roles = "user-default"
+			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
+				return false, err
+			}
+		} else if payload.PaymentFee >= 1500000 {
+			assign.Roles = "user-vip"
+			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
+				return false, err
+			}
+		}
+	} else if assign.Roles == "user-vip" {
+		if payload.PaymentFee < 1500000 {
+			assign.Roles = "user-basic"
+			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
+			} else if payload.PaymentFee >= 3000000 {
+				assign.Roles = "user-vvip"
+				return false, err
+			}
+		} else if assign.Roles == "user-vvip" {
+			if payload.PaymentFee < 3000000 {
+				assign.Roles = "user-vip"
+			}
+		}
+	}
+	return true, nil
 }
