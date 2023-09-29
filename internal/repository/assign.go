@@ -91,13 +91,19 @@ func (r *assigns) EditRolesTopup(c echo.Context, ctx context.Context, payload *d
 		if payload.PaymentFee < 1500000 {
 			assign.Roles = "user-basic"
 			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
-			} else if payload.PaymentFee >= 3000000 {
-				assign.Roles = "user-vvip"
 				return false, err
 			}
-		} else if assign.Roles == "user-vvip" {
-			if payload.PaymentFee < 3000000 {
-				assign.Roles = "user-vip"
+		} else if payload.PaymentFee >= 3000000 {
+			assign.Roles = "user-vvip"
+			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
+				return false, err
+			}
+		}
+	} else if assign.Roles == "user-vvip" {
+		if payload.PaymentFee < 3000000 {
+			assign.Roles = "user-vip"
+			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
+				return false, err
 			}
 		}
 	}
