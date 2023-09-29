@@ -69,27 +69,13 @@ func (r *assigns) EditRolesTopup(c echo.Context, ctx context.Context, payload *d
 	}
 
 	if assign.Roles == "user-default" {
-		if payload.PaymentFee >= 300000 {
+		if payload.PaymentFee >= 300000 && payload.PaymentFee < 1500000 {
 			assign.Roles = "user-basic"
 			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
 				return false, err
 			}
-		}
-	} else if assign.Roles == "user-basic" {
-		if payload.PaymentFee < 300000 {
-			assign.Roles = "user-default"
-			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
-				return false, err
-			}
-		} else if payload.PaymentFee >= 1500000 {
+		} else if payload.PaymentFee >= 1500000 && payload.PaymentFee < 300000 {
 			assign.Roles = "user-vip"
-			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
-				return false, err
-			}
-		}
-	} else if assign.Roles == "user-vip" {
-		if payload.PaymentFee < 1500000 {
-			assign.Roles = "user-basic"
 			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
 				return false, err
 			}
@@ -99,9 +85,14 @@ func (r *assigns) EditRolesTopup(c echo.Context, ctx context.Context, payload *d
 				return false, err
 			}
 		}
-	} else if assign.Roles == "user-vvip" {
-		if payload.PaymentFee < 3000000 {
+	} else if assign.Roles == "user-basic" {
+		if payload.PaymentFee >= 1500000 {
 			assign.Roles = "user-vip"
+			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
+				return false, err
+			}
+		} else if payload.PaymentFee >= 3000000 {
+			assign.Roles = "user-vvip"
 			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
 				return false, err
 			}
