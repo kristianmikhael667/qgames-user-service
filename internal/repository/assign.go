@@ -86,7 +86,7 @@ func (r *assigns) EditRolesTopup(c echo.Context, ctx context.Context, payload *d
 			}
 		}
 	} else if assign.Roles == "user-basic" {
-		if payload.PaymentFee >= 1500000 && payload.PaymentFee < 300000 {
+		if payload.PaymentFee >= 1500000 && payload.PaymentFee < 3000000 {
 			assign.Roles = "user-vip"
 			if err := r.Db.WithContext(ctx).Save(&assign).Error; err != nil {
 				return false, err
