@@ -10,7 +10,6 @@ type (
 	}
 
 	ReqAssign struct {
-		Users      string  `json:"users"`
 		PaymentFee float64 `json:"payment_fee"`
 	}
 )

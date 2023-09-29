@@ -5,6 +5,8 @@ import (
 	"main/internal/dto"
 	"main/internal/factory"
 	"main/internal/repository"
+
+	"github.com/labstack/echo/v4"
 )
 
 type service struct {
@@ -12,7 +14,7 @@ type service struct {
 }
 
 type Service interface {
-	EditAssign(ctx context.Context, payload *dto.ReqAssign) (bool, error)
+	EditAssign(c echo.Context, ctx context.Context, payload *dto.ReqAssign) (bool, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -21,8 +23,8 @@ func NewService(f *factory.Factory) Service {
 	}
 }
 
-func (s *service) EditAssign(ctx context.Context, payload *dto.ReqAssign) (bool, error) {
-	isTrue, err := s.AssignRepository.EditRolesTopup(ctx, payload)
+func (s *service) EditAssign(c echo.Context, ctx context.Context, payload *dto.ReqAssign) (bool, error) {
+	isTrue, err := s.AssignRepository.EditRolesTopup(c, ctx, payload)
 
 	if err != nil {
 		return isTrue, err

@@ -5,7 +5,9 @@ import (
 	"main/helper"
 	"main/internal/dto"
 	model "main/internal/model"
+	"main/internal/pkg/util"
 
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +15,7 @@ type Assign interface {
 	FindUserID(ctx context.Context, users string) (model.Assign, error)
 	Assign(ctx context.Context, users, role, permission string) error
 	GetAssignUsers(ctx context.Context, uidusers string) ([]model.Assign, error)
-	EditRolesTopup(ctx context.Context, payload *dto.ReqAssign) (bool, error)
+	EditRolesTopup(c echo.Context, ctx context.Context, payload *dto.ReqAssign) (bool, error)
 }
 
 type assigns struct {
@@ -56,10 +58,12 @@ func (r *assigns) GetAssignUsers(ctx context.Context, uidusers string) ([]model.
 	return assign, nil
 }
 
-func (r *assigns) EditRolesTopup(ctx context.Context, payload *dto.ReqAssign) (bool, error) {
+func (r *assigns) EditRolesTopup(c echo.Context, ctx context.Context, payload *dto.ReqAssign) (bool, error) {
 	var assign model.Assign
+	authHeader := c.Request().Header.Get("Authorization")
+	tokens, _ := util.ParseJWTToken(authHeader)
 
-	if err := r.Db.WithContext(ctx).Where("users = ? ", payload.Users).Find(&assign).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Where("users = ? ", tokens.Uuid).Find(&assign).Error; err != nil {
 		helper.Logger("error", "Assign Users Not Found", "Rc: "+string(rune(404)))
 		return false, err
 	}

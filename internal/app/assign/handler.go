@@ -37,7 +37,7 @@ func (h *handler) EditAssign(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	result, err := h.service.EditAssign(c.Request().Context(), payload)
+	result, err := h.service.EditAssign(c, c.Request().Context(), payload)
 	if err != nil && result == false {
 		return response.CustomErrorBuilder(400, "Error", "Failed Edit Assign").Send(c)
 
