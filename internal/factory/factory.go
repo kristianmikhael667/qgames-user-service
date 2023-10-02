@@ -13,10 +13,12 @@ type Factory struct {
 	AttemptRepository    repository.Attempt
 	OtpRepository        repository.Otp
 	SessionRepository    repository.Session
+	FcmTokenRepository   repository.Fcmtoken
 }
 
 func NewFactory() *Factory {
 	db := database.GetConnection()
+	mongo := database.GetConnectionMongoDB()
 	return &Factory{
 		repository.NewUserRepository(db),
 		repository.NewRoleRepository(db),
@@ -25,5 +27,6 @@ func NewFactory() *Factory {
 		repository.NewAttemptRepository(db),
 		repository.NewOtpRepository(db),
 		repository.NewSessionRepository(db),
+		repository.NewFcmToken(mongo),
 	}
 }

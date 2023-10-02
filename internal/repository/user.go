@@ -17,6 +17,7 @@ import (
 
 type User interface {
 	FindAll(ctx context.Context, payload *pkgdto.SearchGetRequest, pagination *pkgdto.Pagination) ([]model.User, *pkgdto.PaginationInfo, error)
+	FindIDUser(ctx context.Context, uid string) (model.User, error)
 	Save(ctx context.Context, users *dto.RegisterUsersRequestBody) (model.User, error)
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
@@ -63,6 +64,16 @@ func (r *user) FindAll(ctx context.Context, payload *pkgdto.SearchGetRequest, pa
 	err := query.Limit(limit).Offset(offset).Find(&users).Error
 
 	return users, pkgdto.CheckInfoPagination(pagination, count), err
+}
+
+func (r *user) FindIDUser(ctx context.Context, uid string) (model.User, error) {
+	var users model.User
+
+	q := r.Db.WithContext(ctx).Model(&model.User{}).Where("uid_user = ?", uid).First(&users)
+
+	err := q.Error
+
+	return users, err
 }
 
 func (r *user) Save(ctx context.Context, users *dto.RegisterUsersRequestBody) (model.User, error) {

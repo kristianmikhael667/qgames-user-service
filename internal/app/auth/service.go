@@ -15,11 +15,12 @@ import (
 )
 
 type service struct {
-	UserRepository    repository.User
-	AssignRepository  repository.Assign
-	AttemptRepository repository.Attempt
-	OtpRepository     repository.Otp
-	SessionRepository repository.Session
+	UserRepository     repository.User
+	AssignRepository   repository.Assign
+	AttemptRepository  repository.Attempt
+	OtpRepository      repository.Otp
+	SessionRepository  repository.Session
+	FcmTokenRepository repository.Fcmtoken
 }
 
 type Service interface {
@@ -37,11 +38,12 @@ type Service interface {
 
 func NewService(f *factory.Factory) Service {
 	return &service{
-		UserRepository:    f.UserRepository,
-		AssignRepository:  f.AssignRepository,
-		AttemptRepository: f.AttemptRepository,
-		OtpRepository:     f.OtpRepository,
-		SessionRepository: f.SessionRepository,
+		UserRepository:     f.UserRepository,
+		AssignRepository:   f.AssignRepository,
+		AttemptRepository:  f.AttemptRepository,
+		OtpRepository:      f.OtpRepository,
+		SessionRepository:  f.SessionRepository,
+		FcmTokenRepository: f.FcmTokenRepository,
 	}
 }
 
@@ -151,7 +153,13 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 		return err.Error(), sc, status, err
 	}
 
-	// Step 6. Create OTP and if send otp
+	// Step 6. Create FCM Token and Check FCM Token MongoDB
+	_, err_fcm := s.FcmTokenRepository.CreateFCMTokenUser(ctx, users.UidUser.String(), phone.FcmToken)
+	if err_fcm != nil {
+		return err_fcm.Error(), 500, false, err_fcm
+	}
+
+	// Step 7. Create OTP and if send otp
 	msg, sc, err = s.OtpRepository.SendOtp(ctx, phones, sc, otp, trylimit, msg)
 	if err != nil {
 		return err.Error(), sc, status, err
@@ -262,7 +270,13 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 		return result, msg, sc, err
 	}
 
-	// Step 4. Get all assign and loop
+	// Step 4. Create FCM Token and Check FCM Token MongoDB
+	_, err_fcm := s.FcmTokenRepository.CreateFCMTokenUser(ctx, users.UidUser.String(), loginpin.FcmToken)
+	if err_fcm != nil {
+		return result, "Error", 500, err_fcm
+	}
+
+	// Step 5. Get all assign and loop
 	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, responses.UidUser.String())
 
 	if err != nil {
@@ -520,6 +534,7 @@ func (s *service) RefreshToken(ctx context.Context, oldtoken *dto.JWTClaims) (*d
 			Profile:   users.Profile,
 			CreatedAt: users.CreatedAt,
 			UpdatedAt: users.UpdatedAt,
+			Roles:     firstRole,
 		},
 		Token: token,
 	}

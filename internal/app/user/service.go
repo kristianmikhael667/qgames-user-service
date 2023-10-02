@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	"main/helper"
+	"main/package/constant"
+
 	dto "main/internal/dto"
 	"main/internal/factory"
 	repository "main/internal/repository"
@@ -12,11 +14,13 @@ import (
 
 type service struct {
 	UserRepository    repository.User
+	AssignRepository  repository.Assign
 	SessionRepository repository.Session
 }
 
 type Service interface {
 	Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*pkgdto.SearchGetResponse[dto.UsersResponse], error)
+	FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (*dto.UsersResponse, error)
 	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error)
 	GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error)
 	ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error)
@@ -26,6 +30,7 @@ type Service interface {
 func NewService(f *factory.Factory) Service {
 	return &service{
 		UserRepository:    f.UserRepository,
+		AssignRepository:  f.AssignRepository,
 		SessionRepository: f.SessionRepository,
 	}
 }
@@ -51,6 +56,42 @@ func (s *service) Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*
 	result.PaginationInfo = *info
 
 	return result, nil
+}
+
+func (s *service) FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (*dto.UsersResponse, error) {
+	var result dto.UsersResponse
+
+	// Find Users
+	users, err := s.UserRepository.FindIDUser(ctx, payload.ID)
+	if err != nil {
+
+		if err == constant.RECORD_NOT_FOUND {
+			return nil, err
+		}
+		return nil, err
+	}
+
+	// Find Roles
+	assigns, err := s.AssignRepository.FindUserID(ctx, payload.ID)
+	if err != nil {
+
+		if err == constant.RECORD_NOT_FOUND {
+			return nil, err
+		}
+		return nil, err
+	}
+
+	result.Uuid = users.UidUser.String()
+	result.Fullname = users.Fullname
+	result.Phone = users.Phone
+	result.Email = users.Email
+	result.Address = users.Address
+	result.Profile = users.Profile
+	result.CreatedAt = users.CreatedAt
+	result.UpdatedAt = users.UpdatedAt
+	result.Roles = assigns.Roles
+
+	return &result, err
 }
 
 func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error) {
