@@ -26,7 +26,7 @@ type (
 		Phone    string `json:"phone" validate:"required"`
 		Pin      string `json:"pin" validate:"required"`
 		DeviceId string `json:"device_id" validate:"required"`
-		FcmToken string `json:"fcm_token"` // SEMENTARA
+		FcmToken string `json:"fcm_token" validate:"required"`
 	}
 
 	CheckPin struct {
@@ -46,7 +46,7 @@ type (
 	CheckPhoneReqBody struct {
 		Phone    string `json:"phone" validate:"required"`
 		DeviceId string `json:"device_id" validate:"required"`
-		FcmToken string `json:"fcm_token"` // SEMENTARA
+		FcmToken string `json:"fcm_token" validate:"required"`
 	}
 
 	PhoneAuditTester struct {

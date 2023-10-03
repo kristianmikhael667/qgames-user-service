@@ -153,12 +153,11 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 		return err.Error(), sc, status, err
 	}
 
-	// SEMENTARA
 	// Step 6. Create FCM Token and Check FCM Token MongoDB
-	// _, err_fcm := s.FcmTokenRepository.CreateFCMTokenUser(ctx, users.UidUser.String(), phone.FcmToken)
-	// if err_fcm != nil {
-	// 	return err_fcm.Error(), 500, false, err_fcm
-	// }
+	_, err_fcm := s.FcmTokenRepository.CreateFCMTokenUser(ctx, users.UidUser.String(), phone.FcmToken)
+	if err_fcm != nil {
+		return err_fcm.Error(), 500, false, err_fcm
+	}
 
 	// Step 7. Create OTP and if send otp
 	msg, sc, err = s.OtpRepository.SendOtp(ctx, phones, sc, otp, trylimit, msg)
@@ -271,12 +270,11 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 		return result, msg, sc, err
 	}
 
-	// SEMENTARA
 	// Step 4. Create FCM Token and Check FCM Token MongoDB
-	// _, err_fcm := s.FcmTokenRepository.CreateFCMTokenUser(ctx, users.UidUser.String(), loginpin.FcmToken)
-	// if err_fcm != nil {
-	// 	return result, "Error", 500, err_fcm
-	// }
+	_, err_fcm := s.FcmTokenRepository.CreateFCMTokenUser(ctx, users.UidUser.String(), loginpin.FcmToken)
+	if err_fcm != nil {
+		return result, "Error", 500, err_fcm
+	}
 
 	// Step 5. Get all assign and loop
 	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, responses.UidUser.String())
