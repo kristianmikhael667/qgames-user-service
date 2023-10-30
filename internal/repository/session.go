@@ -16,6 +16,7 @@ type Session interface {
 	CreateSession(ctx context.Context, uid_users string, device_id string, phone string, status int, msg string) (string, int, string, error)
 	UpdateSession(ctx context.Context, sc int, msg string, session *dto.ReqSessionReset) (string, int, error)
 	LogoutSession(ctx context.Context, phone string, device *dto.DeviceId) (string, int, error)
+	AttemptDevice(ctx context.Context, uid string) (string, int16, error)
 }
 
 type session struct {
@@ -33,6 +34,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	otp := helper.GeneratePin(6)
 	totalDevice := util.Getenv("TOTAL_DEVICE", "")
 	intDevice, _ := strconv.ParseInt(totalDevice, 10, 16)
+	int16Value := int16(intDevice)
 
 	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", uid_users).First(&sessions).Error; err != nil {
 		// Create sesssion for new user
@@ -54,12 +56,8 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 
 	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil {
 		// User sudah ada device id yang sama ketika login
-		sessions.TotalDevice = sessions.TotalDevice + 1
-		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
-			return "Failed create session", 500, "Error", err
-		}
 		return msg, status, otp, nil
-	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil && intDevice > 3 {
+	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil && sessions.TotalDevice > int16Value {
 		// User masih login, tapi tiba-tiba ada yg maksa pengen login
 		return "Device Already Login", 403, "Error", nil
 	} else if sessions.LoggedOutAt != nil && sessions.DeviceId != device_id && sessions.Status == false {
@@ -148,4 +146,19 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	}
 
 	return "Success Remove Session", 201, nil
+}
+
+func (r *session) AttemptDevice(ctx context.Context, uid string) (string, int16, error) {
+	var sessions model.Session
+
+	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", uid).First(&sessions).Error; err != nil {
+		return "Uid Not Found Session", 404, err
+	}
+
+	sessions.TotalDevice = sessions.TotalDevice + 1
+	if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+		return "Failed update session", 500, err
+	}
+
+	return "Success Update Session", 201, nil
 }

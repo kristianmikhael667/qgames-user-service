@@ -228,6 +228,12 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 		return result, msg, statuscode, err
 	}
 
+	// Update Session
+	msgSess, scode, _ := s.SessionRepository.AttemptDevice(ctx, response.UidUser.String())
+	if scode != 201 {
+		return result, msgSess, scode, err
+	}
+
 	token, err := util.CreateJWTToken(claims)
 	if err != nil {
 		return result, msg, 401, err
