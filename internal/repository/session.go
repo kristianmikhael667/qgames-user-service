@@ -55,7 +55,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	}
 	// Already Device 403, when user active
 	fmt.Println("mengapa bintang ", status)
-	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil {
+	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 {
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
