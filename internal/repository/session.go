@@ -5,6 +5,8 @@ import (
 	"main/helper"
 	dto "main/internal/dto"
 	model "main/internal/model"
+	"main/package/util"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -29,6 +31,8 @@ func NewSessionRepository(db *gorm.DB) *session {
 func (r *session) CreateSession(ctx context.Context, uid_users string, device_id string, phone string, status int, msg string) (string, int, string, error) {
 	var sessions model.Session
 	otp := helper.GeneratePin(6)
+	totalDevice := util.Getenv("TOTAL_DEVICE", "")
+	intDevice, _ := strconv.ParseInt(totalDevice, 10, 16)
 
 	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", uid_users).First(&sessions).Error; err != nil {
 		// Create sesssion for new user
@@ -36,6 +40,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 			UserId:       uid_users,
 			DeviceId:     device_id,
 			LoginInAt:    time.Now(),
+			TotalDevice:  1,
 			Status:       true,
 			ChangeDevice: nil,
 			LoggedOutAt:  nil,
@@ -49,8 +54,12 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 
 	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil {
 		// User sudah ada device id yang sama ketika login
+		sessions.TotalDevice = sessions.TotalDevice + 1
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed create session", 500, "Error", err
+		}
 		return msg, status, otp, nil
-	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil {
+	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil && intDevice > 3 {
 		// User masih login, tapi tiba-tiba ada yg maksa pengen login
 		return "Device Already Login", 403, "Error", nil
 	} else if sessions.LoggedOutAt != nil && sessions.DeviceId != device_id && sessions.Status == false {
@@ -59,6 +68,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		sessions.DeviceId = device_id
 		sessions.LoggedOutAt = nil
 		sessions.LoginInAt = time.Now()
+		sessions.TotalDevice = sessions.TotalDevice - 1
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 			return "Failed update session", 500, otp, nil
 		}
