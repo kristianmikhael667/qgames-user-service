@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"main/helper"
 	dto "main/internal/dto"
 	model "main/internal/model"
@@ -56,6 +57,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 
 	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil {
 		// User sudah ada device id yang sama ketika login
+		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
 	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil && sessions.TotalDevice > int16Value {
 		// User masih login, tapi tiba-tiba ada yg maksa pengen login
