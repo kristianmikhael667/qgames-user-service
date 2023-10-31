@@ -143,7 +143,6 @@ func (r *session) UpdateSession(ctx context.Context, sc int, msg string, session
 
 func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.DeviceId) (string, int, error) {
 	var sessions model.Session
-	var sessionsDevice model.Session
 	var users model.User
 	totalDevice := util.Getenv("TOTAL_DEVICE", "")
 	intDevice, _ := strconv.ParseInt(totalDevice, 10, 16)
@@ -163,7 +162,7 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	var foundDeviceID string
 
 	fmt.Println("apa ", foundDeviceID)
-	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("device_id = ?", foundDeviceID).First(&sessionsDevice).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&model.Session{}).First(&sessions, "device_id = ?", foundDeviceID).Error; err != nil {
 		return "Device ID not found in session", 404, err
 	}
 
