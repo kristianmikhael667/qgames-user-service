@@ -160,7 +160,10 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	deviceId := sessions.DeviceId
 	deviceIDSlice := strings.Split(deviceId, ",")
 	var foundDeviceID string
-	fmt.Println("brp ", len(deviceIDSlice))
+	fmt.Println("brp ", len(deviceIDSlice) <= intValue)
+	fmt.Println("brp ", len(deviceIDSlice) >= intValue)
+	fmt.Println("brp ", len(deviceIDSlice) < intValue)
+	fmt.Println("brp ", len(deviceIDSlice) > intValue)
 	if len(deviceIDSlice) == intValue {
 		for _, device_id := range deviceIDSlice {
 			if device_id == device.DeviceId {
