@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"main/helper"
 	dto "main/internal/dto"
 	model "main/internal/model"
@@ -144,6 +143,10 @@ func (r *session) UpdateSession(ctx context.Context, sc int, msg string, session
 func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.DeviceId) (string, int, error) {
 	var sessions model.Session
 	var users model.User
+	totalDevice := util.Getenv("TOTAL_DEVICE", "")
+	intDevice, _ := strconv.ParseInt(totalDevice, 10, 16)
+	intValue := int(intDevice)
+
 	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", phone).First(&users).Error; err != nil {
 		return "Phone not found in users", 404, err
 	}
@@ -152,41 +155,46 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 		return "User ID not found in session", 404, err
 	}
 
-	if sessions.LoggedOutAt == nil {
-		now := time.Now()
-		sessions.LoggedOutAt = &now
-		sessions.TotalDevice = sessions.TotalDevice - 1
-	}
-	sessions.Status = false
-
 	// Device ID
 	deviceId := sessions.DeviceId
 	deviceIDSlice := strings.Split(deviceId, ",")
 	var foundDeviceID string
 
-	for _, device_id := range deviceIDSlice {
-		if device_id == device.DeviceId {
-			foundDeviceID = device.DeviceId
-			break
-		}
-	}
-
-	if foundDeviceID != "" {
-		var newDeviceIDs []string
+	if len(deviceIDSlice) == intValue {
 		for _, device_id := range deviceIDSlice {
-			if device_id != device.DeviceId {
-				newDeviceIDs = append(newDeviceIDs, device_id)
+			if device_id == device.DeviceId {
+				foundDeviceID = device.DeviceId
+				break
 			}
 		}
-		updatedDeviceString := strings.Join(newDeviceIDs, ",")
-		sessions.DeviceId = updatedDeviceString
-	}
 
-	if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
-		return "Failed update session", 500, err
-	}
+		if foundDeviceID != "" {
+			var newDeviceIDs []string
+			for _, device_id := range deviceIDSlice {
+				if device_id != device.DeviceId {
+					newDeviceIDs = append(newDeviceIDs, device_id)
+				}
+			}
+			updatedDeviceString := strings.Join(newDeviceIDs, ",")
+			// Update data
+			sessions.DeviceId = updatedDeviceString
+			sessions.TotalDevice = sessions.TotalDevice - 1
+		}
 
-	return "Success Remove Session", 201, nil
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed update session", 500, err
+		}
+
+		return "Success Remove Session", 201, nil
+	} else {
+		if sessions.LoggedOutAt == nil {
+			now := time.Now()
+			sessions.LoggedOutAt = &now
+			sessions.TotalDevice = sessions.TotalDevice - 1
+		}
+		sessions.Status = false
+		return "Success Remove Session", 201, nil
+	}
 }
 
 func (r *session) CheckSession(ctx context.Context, uid_users string, device_id string, phone string, status int, msg string) (string, int, string, error) {
@@ -209,16 +217,17 @@ func (r *session) CheckSession(ctx context.Context, uid_users string, device_id 
 			break
 		}
 	}
-	fmt.Println("status ", status)
 	if isDevice && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		return msg, status, otp, nil
 	} else if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
-		// User sudah ada device id yang sama ketika login
-		return msg, status, otp, nil
+		// Device A sudah ada, tetapi Device B ingin login maka wajib otp jika ingin login
+		return msg, 201, otp, nil
+	} else if sessions.Status == false && sessions.LoggedOutAt != nil && sessions.TotalDevice == 0 {
+		// User logout semuanya
+		return msg, 201, otp, nil
 	} else {
-		// sessions.TotalDevice >= int16Value
-		// User sudah melebihi 2 account akan kena limit dan already device
+		// if sessions.TotalDevice >= int16Value maka User sudah melebihi 2 account akan kena limit dan already device
 		return "Your Device Already 2 Account Login", 403, "Error", nil
 	}
 }
