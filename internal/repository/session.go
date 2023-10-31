@@ -65,7 +65,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		}
 	}
 
-	if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 {
+	if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 201 {
 		// User device A sudah login, tetapi ada device B ingin login maka masih bisa
 		sessions.TotalDevice = sessions.TotalDevice + 1
 		if !strings.Contains(sessions.DeviceId, device_id) {
