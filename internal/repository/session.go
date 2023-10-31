@@ -61,9 +61,6 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		if d == device_id {
 			isDevice = true
 			break
-		} else {
-			isDevice = false
-			break
 		}
 	}
 
