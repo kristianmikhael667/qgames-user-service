@@ -158,15 +158,28 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	}
 	sessions.Status = false
 
-	// Pisahkan perangkat yang ingin dihapus dari string "Device"
-	devices := strings.Split(sessions.DeviceId, ",")
-	var newDevices []string
-	for _, d := range devices {
-		if d != device.DeviceId {
-			newDevices = append(newDevices, d)
+	// Device ID
+	deviceId := sessions.DeviceId
+	deviceIDSlice := strings.Split(deviceId, ",")
+	var foundDeviceID string
+
+	for _, device_id := range deviceIDSlice {
+		if device_id == device.DeviceId {
+			foundDeviceID = device.DeviceId
+			break
 		}
 	}
-	sessions.DeviceId = strings.Join(newDevices, ",")
+
+	if foundDeviceID != "" {
+		var newDeviceIDs []string
+		for _, device_id := range deviceIDSlice {
+			if device_id != device.DeviceId {
+				newDeviceIDs = append(newDeviceIDs, device_id)
+			}
+		}
+		updatedDeviceString := strings.Join(newDeviceIDs, ",")
+		sessions.DeviceId = updatedDeviceString
+	}
 
 	if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 		return "Failed update session", 500, err
