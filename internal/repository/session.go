@@ -224,6 +224,7 @@ func (r *session) CheckSession(ctx context.Context, uid_users string, device_id 
 		return msg, status, otp, nil
 	} else if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// Device A sudah ada, tetapi Device B ingin login maka wajib otp jika ingin login
+		fmt.Println("masuk ini 2 ", isDevice, " ", sessions.Status, " ", status, " ", sessions.TotalDevice)
 		return msg, 201, otp, nil
 	} else if sessions.Status == false && sessions.LoggedOutAt != nil && sessions.TotalDevice == 0 {
 		// User logout semuanya
