@@ -183,7 +183,8 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, phone strin
 	}
 
 	// Application
-	appsSlice := strings.Split(apps, ",")
+	appId := sessions.Application
+	appsSlice := strings.Split(appId, ",")
 	var foundApps string
 
 	for _, app := range appsSlice {
