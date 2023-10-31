@@ -161,6 +161,10 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	deviceIDSlice := strings.Split(deviceId, ",")
 	var foundDeviceID string
 
+	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("device_id = ?", foundDeviceID).First(&sessions).Error; err != nil {
+		return "Device ID not found in session", 404, err
+	}
+
 	if len(deviceIDSlice) >= intValue {
 		for _, device_id := range deviceIDSlice {
 			if device_id == device.DeviceId {
