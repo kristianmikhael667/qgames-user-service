@@ -161,7 +161,6 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	deviceIDSlice := strings.Split(deviceId, ",")
 	var foundDeviceID string
 
-	fmt.Println("apa ", foundDeviceID)
 	for _, device_id := range deviceIDSlice {
 		if device_id == device.DeviceId {
 			foundDeviceID = device.DeviceId
@@ -173,7 +172,6 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	}
 
 	if len(deviceIDSlice) >= intValue {
-
 		if foundDeviceID != "" {
 			var newDeviceIDs []string
 			for _, device_id := range deviceIDSlice {
