@@ -59,7 +59,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	devices := strings.Split(sessions.DeviceId, ",")
 	var isDevice bool
 	for _, d := range devices {
-		if d != sessions.DeviceId {
+		if d == sessions.DeviceId {
 			isDevice = true
 		} else {
 			isDevice = false
