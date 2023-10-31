@@ -192,6 +192,7 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 			now := time.Now()
 			sessions.LoggedOutAt = &now
 			sessions.TotalDevice = sessions.TotalDevice - 1
+			sessions.DeviceId = ""
 		}
 		sessions.Status = false
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
