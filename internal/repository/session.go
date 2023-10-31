@@ -147,9 +147,9 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 		return "Phone not found in users", 404, err
 	}
 
-	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ? AND device_id = ?", users.UidUser, device.DeviceId).First(&sessions).Error; err != nil {
-		return "User ID And Device ID not found in session", 404, err
-	}
+	// if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ? AND device_id = ?", users.UidUser, device.DeviceId).First(&sessions).Error; err != nil {
+	// 	return "User ID And Device ID not found in session", 404, err
+	// }
 
 	if sessions.LoggedOutAt == nil {
 		now := time.Now()
