@@ -62,13 +62,14 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	for _, d := range devices {
 		if d == device_id {
 			deviceId = append(deviceId, d)
-			devicestr = deviceId[0]
+			devicestr = d
 		} else {
-			devicestr = deviceId[0]
+			devicestr = d
 		}
 	}
 	sessions.DeviceId = strings.Join(deviceId, ",")
 	fmt.Println("apaaa ", deviceId)
+	fmt.Println("apaaa 2 ", devicestr)
 	if devicestr == device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
