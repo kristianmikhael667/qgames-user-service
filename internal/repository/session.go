@@ -187,8 +187,8 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, phone strin
 	var foundApps string
 
 	for _, app := range appsSlice {
-		if app == device.DeviceId {
-			foundApps = device.DeviceId
+		if app == apps {
+			foundApps = apps
 			break
 		}
 	}
