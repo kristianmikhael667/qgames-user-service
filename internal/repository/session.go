@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"main/helper"
 	dto "main/internal/dto"
 	model "main/internal/model"
@@ -219,6 +220,7 @@ func (r *session) CheckSession(ctx context.Context, uid_users string, device_id 
 	}
 	if isDevice && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
+		fmt.Println("masuk ini ", isDevice, " ", sessions.Status, " ", status, " ", sessions.TotalDevice)
 		return msg, status, otp, nil
 	} else if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// Device A sudah ada, tetapi Device B ingin login maka wajib otp jika ingin login
