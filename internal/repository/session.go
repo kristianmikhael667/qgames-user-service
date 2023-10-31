@@ -69,7 +69,9 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	fmt.Println("apaaa ", isDevice)
 	fmt.Println("apaaa 1 ", sessions.TotalDevice)
 	fmt.Println("apaaa 2 ", int16Value)
-	if isDevice && sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
+	if sessions.TotalDevice >= int16Value {
+		return "Device Already Login", 403, "Error", nil
+	} else if isDevice && sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
@@ -95,8 +97,6 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 			return "Failed update session", 500, otp, nil
 		}
 		return "Login OTP", 201, otp, nil
-	} else if sessions.TotalDevice >= int16Value {
-		return "Device Already Login", 403, "Error", nil
 	} else {
 		// User logout di device yg sama dan user login dengan device yang sama
 		sessions.Status = true
