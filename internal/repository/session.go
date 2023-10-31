@@ -234,6 +234,7 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, phone strin
 			sessions.LoggedOutAt = &now
 			sessions.TotalDevice = sessions.TotalDevice - 1
 			sessions.DeviceId = ""
+			sessions.Application = ""
 		}
 		sessions.Status = false
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
