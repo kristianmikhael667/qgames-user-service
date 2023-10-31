@@ -160,19 +160,7 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	deviceId := sessions.DeviceId
 	deviceIDSlice := strings.Split(deviceId, ",")
 	var foundDeviceID string
-	// 2 <= 2
-	// 2 >= 2
-	fmt.Println("brp ", len(deviceIDSlice) <= intValue) // true
-	fmt.Println("brp ", len(deviceIDSlice) >= intValue) // true
-	fmt.Println("brp ", len(deviceIDSlice) < intValue)  // false
-	fmt.Println("brp ", len(deviceIDSlice) > intValue)  // false
 
-	// 1 <= 2
-	// 1 >= 2
-	fmt.Println("brp ", len(deviceIDSlice) <= intValue) // true
-	fmt.Println("brp ", len(deviceIDSlice) >= intValue) // false
-	fmt.Println("brp ", len(deviceIDSlice) < intValue)  // true
-	fmt.Println("brp ", len(deviceIDSlice) > intValue)  // false
 	if len(deviceIDSlice) >= intValue {
 		for _, device_id := range deviceIDSlice {
 			if device_id == device.DeviceId {
@@ -206,6 +194,10 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 			sessions.TotalDevice = sessions.TotalDevice - 1
 		}
 		sessions.Status = false
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed update session", 500, err
+		}
+
 		return "Success Remove Session Device 1", 201, nil
 	}
 }
