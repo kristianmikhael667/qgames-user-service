@@ -69,7 +69,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
-	} else if sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && int16Value > sessions.TotalDevice {
+	} else if sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice > int16Value {
 		sessions.TotalDevice = sessions.TotalDevice + 1
 		if !strings.Contains(sessions.DeviceId, device_id) {
 			sessions.DeviceId = sessions.DeviceId + "," + device_id
