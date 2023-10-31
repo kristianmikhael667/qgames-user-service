@@ -59,6 +59,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	fmt.Println("mengalir ", device_id)
 	fmt.Println("dunia ", sessions.Status)
 	fmt.Println("lihat ", sessions.LoggedOutAt)
+	fmt.Println("mengerti ", int16Value)
 	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 {
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
