@@ -209,8 +209,8 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, phone strin
 
 			// Apps
 			var newAppsIDs []string
-			for _, app := range deviceIDSlice {
-				if app != device.DeviceId {
+			for _, app := range appsSlice {
+				if app != apps {
 					newAppsIDs = append(newAppsIDs, app)
 				}
 			}
