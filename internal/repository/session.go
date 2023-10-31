@@ -62,11 +62,11 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	fmt.Println("lihat ", sessions.LoggedOutAt)
 	fmt.Println("mengerti ", int16Value)
 	fmt.Println("kau ", sessions.TotalDevice)
-	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
+	if sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
-	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && int16Value >= sessions.TotalDevice {
+	} else if sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && int16Value >= sessions.TotalDevice {
 		sessions.TotalDevice = sessions.TotalDevice + 1
 		if !strings.Contains(sessions.DeviceId, device_id) {
 			sessions.DeviceId = sessions.DeviceId + "," + device_id
@@ -77,7 +77,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		// User masih login, tapi tiba-tiba ada yg maksa pengen login
 		// return "Device Already Login", 403, "Error", nil
 		return msg, status, otp, nil
-	} else if sessions.LoggedOutAt != nil && sessions.DeviceId != device_id && sessions.Status == false {
+	} else if sessions.LoggedOutAt != nil && sessions.TotalDevice <= int16Value && sessions.Status == false {
 		// User sudah logout di device a tetapi ingin login di device b
 		sessions.Status = true
 		sessions.DeviceId = device_id
