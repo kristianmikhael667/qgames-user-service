@@ -71,12 +71,13 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	fmt.Println("apaaa 2 ", int16Value)
 	fmt.Println("apaaa 3 ", sessions.TotalDevice <= int16Value)
 	fmt.Println("apaaa 4 ", sessions.TotalDevice < int16Value)
-	if sessions.TotalDevice >= int16Value {
-		return "Device Already Login", 403, "Error", nil
-	} else if isDevice && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
+
+	if isDevice && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
+	} else if sessions.TotalDevice >= int16Value {
+		return "Device Already Login", 403, "Error", nil
 	} else if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 {
 		sessions.TotalDevice = sessions.TotalDevice + 1
 		if !strings.Contains(sessions.DeviceId, device_id) {
