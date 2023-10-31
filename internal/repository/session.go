@@ -209,8 +209,11 @@ func (r *session) CheckSession(ctx context.Context, uid_users string, device_id 
 			break
 		}
 	}
-	fmt.Println("isdevice ", isDevice)
+	fmt.Println("status ", status)
 	if isDevice && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
+		// User sudah ada device id yang sama ketika login
+		return msg, status, otp, nil
+	} else if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		return msg, status, otp, nil
 	} else {
