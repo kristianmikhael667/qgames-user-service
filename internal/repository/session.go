@@ -61,11 +61,11 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	fmt.Println("lihat ", sessions.LoggedOutAt)
 	fmt.Println("mengerti ", int16Value)
 	fmt.Println("kau ", sessions.TotalDevice)
-	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 {
+	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
-	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice == int16Value {
+	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && int16Value >= sessions.TotalDevice {
 		// User masih login, tapi tiba-tiba ada yg maksa pengen login
 		return "Device Already Login", 403, "Error", nil
 	} else if sessions.LoggedOutAt != nil && sessions.DeviceId != device_id && sessions.Status == false {
