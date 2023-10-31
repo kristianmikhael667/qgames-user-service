@@ -88,6 +88,8 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 			return "Failed update session", 500, otp, nil
 		}
 		return "Login OTP", 201, otp, nil
+	} else if sessions.TotalDevice >= int16Value {
+		return "Device Already Login", 403, "Error", nil
 	} else {
 		// User logout di device yg sama dan user login dengan device yang sama
 		sessions.Status = true
