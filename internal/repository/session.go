@@ -59,7 +59,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	devices := strings.Split(sessions.DeviceId, ",")
 	var deviceId []string
 	for _, d := range devices {
-		if d != device_id {
+		if d == device_id {
 			deviceId = append(deviceId, d)
 		}
 	}
