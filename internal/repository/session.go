@@ -160,7 +160,7 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	deviceId := sessions.DeviceId
 	deviceIDSlice := strings.Split(deviceId, ",")
 	var foundDeviceID string
-
+	fmt.Println("brp ", len(deviceIDSlice))
 	if len(deviceIDSlice) == intValue {
 		for _, device_id := range deviceIDSlice {
 			if device_id == device.DeviceId {
@@ -223,6 +223,7 @@ func (r *session) CheckSession(ctx context.Context, uid_users string, device_id 
 		fmt.Println("masuk ini ", isDevice, " ", sessions.Status, " ", status, " ", sessions.TotalDevice)
 		return msg, status, otp, nil
 	} else if sessions.TotalDevice >= int16Value {
+		// User sudah melebihi 2 account akan kena limit dan already device
 		return "Your Device Already 2 Account Login", 403, "Error", nil
 	} else if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// Device A sudah ada, tetapi Device B ingin login maka wajib otp jika ingin login
@@ -232,7 +233,7 @@ func (r *session) CheckSession(ctx context.Context, uid_users string, device_id 
 		// User logout semuanya
 		return msg, 201, otp, nil
 	} else {
-		// if sessions.TotalDevice >= int16Value maka User sudah melebihi 2 account akan kena limit dan already device
+		// default
 		return "Undefined", 500, "Error", nil
 	}
 }
