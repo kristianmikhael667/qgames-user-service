@@ -69,6 +69,8 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	fmt.Println("apaaa ", isDevice)
 	fmt.Println("apaaa 1 ", sessions.TotalDevice)
 	fmt.Println("apaaa 2 ", int16Value)
+	fmt.Println("apaaa 3 ", sessions.TotalDevice <= int16Value)
+	fmt.Println("apaaa 4 ", sessions.TotalDevice < int16Value)
 	if sessions.TotalDevice >= int16Value {
 		return "Device Already Login", 403, "Error", nil
 	} else if isDevice && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
