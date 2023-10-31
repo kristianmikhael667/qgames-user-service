@@ -55,7 +55,6 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		return msg, 201, otp, nil
 	}
 	// Already Device 403, when user active
-	device_id = "dedede"
 	devices := strings.Split(sessions.DeviceId, ",")
 	var isDevice bool
 	for _, d := range devices {
