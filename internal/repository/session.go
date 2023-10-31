@@ -55,14 +55,17 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		return msg, 201, otp, nil
 	}
 	// Already Device 403, when user active
-	fmt.Println("mengapa bintang ", status)
-	fmt.Println("air ", sessions.DeviceId)
-	fmt.Println("mengalir ", device_id)
-	fmt.Println("dunia ", sessions.Status)
-	fmt.Println("lihat ", sessions.LoggedOutAt)
-	fmt.Println("mengerti ", int16Value)
-	fmt.Println("kau ", sessions.TotalDevice)
-	if sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
+
+	devices := strings.Split(sessions.DeviceId, ",")
+	var newDevices []string
+	for _, d := range devices {
+		if d != sessions.DeviceId {
+			newDevices = append(newDevices, d)
+		}
+	}
+	sessions.DeviceId = strings.Join(newDevices, ",")
+	fmt.Println("apaaa ", newDevices)
+	if sessions.DeviceId == device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
