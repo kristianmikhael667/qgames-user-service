@@ -68,8 +68,9 @@ type (
 	}
 
 	RequestPhoneOtp struct {
-		Phone string `json:"phone" validate:"required"`
-		Otp   string `json:"otp" validate:"required"`
+		Phone    string `json:"phone" validate:"required"`
+		Otp      string `json:"otp" validate:"required"`
+		DeviceID string `json:"device_id" validate:"required"`
 	}
 
 	JWTClaims struct {

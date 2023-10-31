@@ -148,7 +148,7 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 	}
 
 	// Step 5. Create Session and Check Device Id
-	msg, sc, otp, err := s.SessionRepository.CreateSession(ctx, users.UidUser.String(), phone.DeviceId, phone.Phone, sc, msg)
+	msg, sc, otp, err := s.SessionRepository.CheckSession(ctx, users.UidUser.String(), phone.DeviceId, phone.Phone, sc, msg)
 	if err != nil {
 		return err.Error(), sc, status, err
 	}
@@ -229,7 +229,7 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 	}
 
 	// Update Session
-	msgSess, scode, _ := s.SessionRepository.AttemptDevice(ctx, response.UidUser.String())
+	msgSess, scode, _ := s.SessionRepository.CreateSession(ctx, response.UidUser.String(), validotp.DeviceID, response.Phone, statuscode, msg)
 	if scode != 201 {
 		return result, msgSess, scode, err
 	}
@@ -264,7 +264,7 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 		return result, msg, sc, err
 	}
 	// Step 2. Check Session and Check Device Id
-	msg, sc, _, _ = s.SessionRepository.CreateSession(ctx, users.UidUser.String(), loginpin.DeviceId, loginpin.Phone, sc, msg)
+	msg, sc, _, _ = s.SessionRepository.CheckSession(ctx, users.UidUser.String(), loginpin.DeviceId, loginpin.Phone, sc, msg)
 	if sc == 403 {
 		return result, msg, sc, err
 	}
@@ -327,7 +327,7 @@ func (s *service) CheckPin(ctx context.Context, token *dto.JWTClaims, loginpin *
 		return false, sc, msg, err
 	}
 	// Step 2. Check Session and Check Device Id
-	msg, sc, _, _ = s.SessionRepository.CreateSession(ctx, users.UidUser.String(), loginpin.DeviceId, token.Phone, sc, msg)
+	msg, sc, _, _ = s.SessionRepository.CheckSession(ctx, users.UidUser.String(), loginpin.DeviceId, token.Phone, sc, msg)
 	if sc == 403 {
 		return false, sc, msg, err
 	}
