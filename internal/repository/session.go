@@ -73,7 +73,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
-	} else if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice > int16Value {
+	} else if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 {
 		sessions.TotalDevice = sessions.TotalDevice + 1
 		if !strings.Contains(sessions.DeviceId, device_id) {
 			sessions.DeviceId = sessions.DeviceId + "," + device_id
@@ -95,7 +95,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 			return "Failed update session", 500, otp, nil
 		}
 		return "Login OTP", 201, otp, nil
-	} else if sessions.TotalDevice > int16Value {
+	} else if sessions.TotalDevice == int16Value {
 		return "Device Already Login", 403, "Error", nil
 	} else {
 		// User logout di device yg sama dan user login dengan device yang sama
