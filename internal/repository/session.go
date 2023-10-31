@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"main/helper"
 	dto "main/internal/dto"
 	model "main/internal/model"
@@ -208,7 +209,7 @@ func (r *session) CheckSession(ctx context.Context, uid_users string, device_id 
 			break
 		}
 	}
-
+	fmt.Println("isdevice ", isDevice)
 	if isDevice && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		return msg, status, otp, nil
