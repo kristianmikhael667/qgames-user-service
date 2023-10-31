@@ -76,6 +76,9 @@ func (r *session) CreateSession(c echo.Context, ctx context.Context, uid_users s
 		if !strings.Contains(sessions.DeviceId, device_id) {
 			sessions.DeviceId = sessions.DeviceId + "," + device_id
 		}
+		if !strings.Contains(sessions.Application, apps) {
+			sessions.Application = sessions.Application + "," + apps
+		}
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 			return "Failed create session", 500, err
 		}
@@ -84,6 +87,7 @@ func (r *session) CreateSession(c echo.Context, ctx context.Context, uid_users s
 		// User sudah logout di device a tetapi ingin login di device b
 		sessions.Status = true
 		sessions.DeviceId = device_id
+		sessions.Application = apps
 		sessions.LoggedOutAt = nil
 		sessions.LoginInAt = time.Now()
 		sessions.TotalDevice = sessions.TotalDevice + 1
