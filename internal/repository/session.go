@@ -39,7 +39,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 	int16Value := int16(intDevice)
 
 	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", uid_users).First(&sessions).Error; err != nil {
-		// Create sesssion for new user
+		// Create sesssion for new user initial
 		newSession := model.Session{
 			UserId:       uid_users,
 			DeviceId:     device_id,
@@ -54,7 +54,8 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		}
 		return msg, 201, otp, nil
 	}
-	// Already Device 403, when user active
+
+	// Check all device id
 	devices := strings.Split(sessions.DeviceId, ",")
 	var isDevice bool
 	for _, d := range devices {
@@ -63,12 +64,6 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 			break
 		}
 	}
-
-	fmt.Println("apaaa ", isDevice)
-	fmt.Println("apaaa 1 ", sessions.TotalDevice)
-	fmt.Println("apaaa 2 ", int16Value)
-	fmt.Println("apaaa 3 ", sessions.TotalDevice <= int16Value)
-	fmt.Println("apaaa 4 ", sessions.TotalDevice < int16Value)
 
 	if isDevice && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
@@ -167,6 +162,7 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	if sessions.LoggedOutAt == nil {
 		now := time.Now()
 		sessions.LoggedOutAt = &now
+		sessions.TotalDevice = sessions.TotalDevice - 1
 	}
 	sessions.Status = false
 
