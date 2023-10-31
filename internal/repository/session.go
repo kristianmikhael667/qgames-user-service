@@ -162,17 +162,17 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	var foundDeviceID string
 
 	fmt.Println("apa ", foundDeviceID)
+	for _, device_id := range deviceIDSlice {
+		if device_id == device.DeviceId {
+			foundDeviceID = device.DeviceId
+			break
+		}
+	}
 	if foundDeviceID == "" {
 		return "Device ID not found in session", 404, nil
 	}
 
 	if len(deviceIDSlice) >= intValue {
-		for _, device_id := range deviceIDSlice {
-			if device_id == device.DeviceId {
-				foundDeviceID = device.DeviceId
-				break
-			}
-		}
 
 		if foundDeviceID != "" {
 			var newDeviceIDs []string
