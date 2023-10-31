@@ -168,7 +168,7 @@ func (h *handler) Logout(c echo.Context) error {
 	}
 
 	uid := token.Uuid
-	msg, sc, err := h.service.Logout(c.Request().Context(), uid, payload)
+	msg, sc, err := h.service.Logout(c, c.Request().Context(), uid, payload)
 
 	if sc != 201 && sc != 200 {
 		return response.CustomErrorBuilder(sc, msg, "Error").Send(c)

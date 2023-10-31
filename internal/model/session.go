@@ -11,6 +11,7 @@ type Session struct {
 	LoginInAt    time.Time `json:"login_in_at" gorm:"timestamp"`
 	Status       bool      `json:"status"`
 	TotalDevice  int16     `json:"total_device" gorm:"int16;not null"`
+	Application  string    `json:"application" gorm:"varchar;not null"`
 	ChangeDevice *time.Time
 	LoggedOutAt  *time.Time
 }

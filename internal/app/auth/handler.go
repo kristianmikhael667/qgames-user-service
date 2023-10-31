@@ -45,7 +45,7 @@ func (h *handler) RequestOtp(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	checkphone, sc, _, err := h.service.RequestOtp(c.Request().Context(), phoneNumber)
+	checkphone, sc, _, err := h.service.RequestOtp(c, c.Request().Context(), phoneNumber)
 	if err != nil {
 		return response.ErrorResponse(err).Send(c)
 	}
@@ -72,7 +72,7 @@ func (h *handler) VerifyOtp(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	checkverify, msg, sc, _ := h.service.VerifyOtp(c.Request().Context(), bodyVerify)
+	checkverify, msg, sc, _ := h.service.VerifyOtp(c, c.Request().Context(), bodyVerify)
 	if sc != 201 && sc != 205 {
 		return response.CustomErrorBuilder(int(sc), "error", msg).Send(c)
 	}
@@ -89,7 +89,7 @@ func (h *handler) LoginPin(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	result, msg, sc, err := h.service.LoginPin(c.Request().Context(), payloads)
+	result, msg, sc, err := h.service.LoginPin(c, c.Request().Context(), payloads)
 	if err != nil {
 		return response.ErrorResponse(err).Send(c)
 	}
@@ -116,7 +116,7 @@ func (h *handler) CheckPin(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	isPin, sc, _, err := h.service.CheckPin(c.Request().Context(), token, payloads)
+	isPin, sc, _, err := h.service.CheckPin(c, c.Request().Context(), token, payloads)
 	if err != nil {
 		return response.ErrorResponse(err).Send(c)
 	}

@@ -11,14 +11,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
 type Session interface {
-	CreateSession(ctx context.Context, uid_users string, device_id string, phone string, status int16, msg string) (string, int16, error)
+	CreateSession(c echo.Context, ctx context.Context, uid_users string, device_id string, phone string, status int16, msg string) (string, int16, error)
 	UpdateSession(ctx context.Context, sc int, msg string, session *dto.ReqSessionReset) (string, int, error)
-	LogoutSession(ctx context.Context, phone string, device *dto.DeviceId) (string, int, error)
-	CheckSession(ctx context.Context, uid_users string, device_id string, phone string, status int, msg string) (string, int, string, error)
+	LogoutSession(c echo.Context, ctx context.Context, phone string, device *dto.DeviceId) (string, int, error)
+	CheckSession(c echo.Context, ctx context.Context, uid_users string, device_id string, phone string, status int, msg string) (string, int, string, error)
 }
 
 type session struct {
@@ -31,12 +32,15 @@ func NewSessionRepository(db *gorm.DB) *session {
 	}
 }
 
-func (r *session) CreateSession(ctx context.Context, uid_users string, device_id string, phone string, status int16, msg string) (string, int16, error) {
+func (r *session) CreateSession(c echo.Context, ctx context.Context, uid_users string, device_id string, phone string, status int16, msg string) (string, int16, error) {
 	var sessions model.Session
 
 	totalDevice := util.Getenv("TOTAL_DEVICE", "")
 	intDevice, _ := strconv.ParseInt(totalDevice, 10, 16)
 	int16Value := int16(intDevice)
+
+	// Header Application
+	apps := c.Request().Header.Get("Application")
 
 	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", uid_users).First(&sessions).Error; err != nil {
 		// Create sesssion for new user initial
@@ -45,6 +49,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 			DeviceId:     device_id,
 			LoginInAt:    time.Now(),
 			TotalDevice:  1,
+			Application:  apps,
 			Status:       true,
 			ChangeDevice: nil,
 			LoggedOutAt:  nil,
@@ -141,12 +146,14 @@ func (r *session) UpdateSession(ctx context.Context, sc int, msg string, session
 	return "Success Reset Device ID", 200, nil
 }
 
-func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.DeviceId) (string, int, error) {
+func (r *session) LogoutSession(c echo.Context, ctx context.Context, phone string, device *dto.DeviceId) (string, int, error) {
 	var sessions model.Session
 	var users model.User
 	totalDevice := util.Getenv("TOTAL_DEVICE", "")
 	intDevice, _ := strconv.ParseInt(totalDevice, 10, 16)
 	intValue := int(intDevice)
+	// Header Application
+	apps := c.Request().Header.Get("Application")
 
 	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", phone).First(&users).Error; err != nil {
 		return "Phone not found in users", 404, err
@@ -171,8 +178,23 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 		return "Device ID not found in session", 404, nil
 	}
 
-	if len(deviceIDSlice) >= intValue {
-		if foundDeviceID != "" {
+	// Application
+	appsSlice := strings.Split(apps, ",")
+	var foundApps string
+
+	for _, app := range appsSlice {
+		if app == device.DeviceId {
+			foundApps = device.DeviceId
+			break
+		}
+	}
+	if foundApps == "" {
+		return "Application not found in session", 404, nil
+	}
+
+	if len(deviceIDSlice) >= intValue && len(appsSlice) >= intValue {
+		if foundDeviceID != "" && foundApps != "" {
+			// Device ID
 			var newDeviceIDs []string
 			for _, device_id := range deviceIDSlice {
 				if device_id != device.DeviceId {
@@ -180,8 +202,19 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 				}
 			}
 			updatedDeviceString := strings.Join(newDeviceIDs, ",")
+
+			// Apps
+			var newAppsIDs []string
+			for _, app := range deviceIDSlice {
+				if app != device.DeviceId {
+					newAppsIDs = append(newAppsIDs, app)
+				}
+			}
+			updatedAppsString := strings.Join(newAppsIDs, ",")
+
 			// Update data
 			sessions.DeviceId = updatedDeviceString
+			sessions.Application = updatedAppsString
 			sessions.TotalDevice = sessions.TotalDevice - 1
 		}
 
@@ -206,12 +239,17 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 	}
 }
 
-func (r *session) CheckSession(ctx context.Context, uid_users string, device_id string, phone string, status int, msg string) (string, int, string, error) {
+func (r *session) CheckSession(c echo.Context, ctx context.Context, uid_users string, device_id string, phone string, status int, msg string) (string, int, string, error) {
 	var sessions model.Session
 	otp := helper.GeneratePin(6)
 	totalDevice := util.Getenv("TOTAL_DEVICE", "")
 	intDevice, _ := strconv.ParseInt(totalDevice, 10, 16)
 	int16Value := int16(intDevice)
+	var isDevice bool
+	var isApps bool
+
+	// Header Application
+	apps := c.Request().Header.Get("Application")
 
 	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", uid_users).First(&sessions).Error; err != nil {
 		return msg, 201, otp, nil
@@ -219,21 +257,30 @@ func (r *session) CheckSession(ctx context.Context, uid_users string, device_id 
 
 	// Check all device id
 	devices := strings.Split(sessions.DeviceId, ",")
-	var isDevice bool
 	for _, d := range devices {
 		if d == device_id {
 			isDevice = true
 			break
 		}
 	}
-	if isDevice && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
+
+	// Check name application
+	application := strings.Split(sessions.Application, ",")
+	for _, d := range application {
+		if d == apps {
+			isApps = true
+			break
+		}
+	}
+
+	if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// User sudah ada device id yang sama ketika login
 		fmt.Println("masuk ini ", isDevice, " ", sessions.Status, " ", status, " ", sessions.TotalDevice)
 		return msg, status, otp, nil
 	} else if sessions.TotalDevice >= int16Value {
 		// User sudah melebihi 2 account akan kena limit dan already device
 		return "Your Device Already 2 Account Login", 403, "Error", nil
-	} else if isDevice == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
+	} else if isDevice == false && isApps == false && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && sessions.TotalDevice <= int16Value {
 		// Device A sudah ada, tetapi Device B ingin login maka wajib otp jika ingin login
 		fmt.Println("masuk ini 2 ", isDevice, " ", sessions.Status, " ", status, " ", sessions.TotalDevice)
 		return msg, 201, otp, nil

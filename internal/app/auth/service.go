@@ -12,6 +12,8 @@ import (
 	utils "main/package/util"
 	"main/package/util/response"
 	"strings"
+
+	"github.com/labstack/echo/v4"
 )
 
 type service struct {
@@ -26,13 +28,13 @@ type service struct {
 type Service interface {
 	RegisterUsers(ctx context.Context, payload *dto.RegisterUsersRequestBody) (*dto.UserWithJWTResponse, error)
 	CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequestBody) (bool, error)
-	RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, int, bool, error)
-	VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error)
-	LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error)
+	RequestOtp(c echo.Context, ctx context.Context, phone *dto.CheckPhoneReqBody) (string, int, bool, error)
+	VerifyOtp(c echo.Context, ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error)
+	LoginPin(c echo.Context, ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (*dto.UserWithJWTResponse, string, int, error)
 	ConfirmReset(ctx context.Context, phone *dto.CheckSession) (string, int, error)
 	ResetDevice(ctx context.Context, session *dto.ReqSessionReset) (*dto.UserWithJWTResponse, string, int, error)
-	CheckPin(ctx context.Context, token *dto.JWTClaims, loginpin *dto.CheckPin) (bool, int, string, error)
+	CheckPin(c echo.Context, ctx context.Context, token *dto.JWTClaims, loginpin *dto.CheckPin) (bool, int, string, error)
 	RefreshToken(ctx context.Context, oldtoken *dto.JWTClaims) (*dto.UserWithJWTResponse, int, string, error)
 }
 
@@ -120,7 +122,7 @@ func (s *service) CheckPhone(ctx context.Context, payload *dto.RegisterUsersRequ
 	return false, err
 }
 
-func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) (string, int, bool, error) {
+func (s *service) RequestOtp(c echo.Context, ctx context.Context, phone *dto.CheckPhoneReqBody) (string, int, bool, error) {
 	// Step 1. Number Check Regex
 	phones := strings.Replace(phone.Phone, "+62", "0", -1)
 	// phones = strings.Replace(phones, "62", "0", -1)
@@ -148,7 +150,7 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 	}
 
 	// Step 5. Create Session and Check Device Id
-	msg, sc, otp, err := s.SessionRepository.CheckSession(ctx, users.UidUser.String(), phone.DeviceId, phone.Phone, sc, msg)
+	msg, sc, otp, err := s.SessionRepository.CheckSession(c, ctx, users.UidUser.String(), phone.DeviceId, phone.Phone, sc, msg)
 	if err != nil {
 		return err.Error(), sc, status, err
 	}
@@ -167,7 +169,7 @@ func (s *service) RequestOtp(ctx context.Context, phone *dto.CheckPhoneReqBody) 
 	return msg, sc, status, nil
 }
 
-func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error) {
+func (s *service) VerifyOtp(c echo.Context, ctx context.Context, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, string, int16, error) {
 	var result *dto.UserWithJWTResponse
 
 	// If Number Tester
@@ -229,7 +231,7 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 	}
 
 	// Update Session
-	msgSess, scode, _ := s.SessionRepository.CreateSession(ctx, response.UidUser.String(), validotp.DeviceID, response.Phone, statuscode, msg)
+	msgSess, scode, _ := s.SessionRepository.CreateSession(c, ctx, response.UidUser.String(), validotp.DeviceID, response.Phone, statuscode, msg)
 	if scode != 201 {
 		return result, msgSess, scode, err
 	}
@@ -255,7 +257,7 @@ func (s *service) VerifyOtp(ctx context.Context, validotp *dto.RequestPhoneOtp) 
 	return result, msg, sc, nil
 }
 
-func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error) {
+func (s *service) LoginPin(c echo.Context, ctx context.Context, loginpin *dto.LoginByPin) (*dto.UserWithJWTResponse, string, int, error) {
 	var result *dto.UserWithJWTResponse
 
 	// Step 1. Check Number User
@@ -264,7 +266,7 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 		return result, msg, sc, err
 	}
 	// Step 2. Check Session and Check Device Id
-	msg, sc, _, _ = s.SessionRepository.CheckSession(ctx, users.UidUser.String(), loginpin.DeviceId, loginpin.Phone, sc, msg)
+	msg, sc, _, _ = s.SessionRepository.CheckSession(c, ctx, users.UidUser.String(), loginpin.DeviceId, loginpin.Phone, sc, msg)
 	if sc == 403 {
 		return result, msg, sc, err
 	}
@@ -320,14 +322,14 @@ func (s *service) LoginPin(ctx context.Context, loginpin *dto.LoginByPin) (*dto.
 	return result, msg, 201, nil
 }
 
-func (s *service) CheckPin(ctx context.Context, token *dto.JWTClaims, loginpin *dto.CheckPin) (bool, int, string, error) {
+func (s *service) CheckPin(c echo.Context, ctx context.Context, token *dto.JWTClaims, loginpin *dto.CheckPin) (bool, int, string, error) {
 	// Step 1. Check Number User
 	users, sc, msg, err := s.UserRepository.MyAccount(ctx, token.Uuid)
 	if err != nil {
 		return false, sc, msg, err
 	}
 	// Step 2. Check Session and Check Device Id
-	msg, sc, _, _ = s.SessionRepository.CheckSession(ctx, users.UidUser.String(), loginpin.DeviceId, token.Phone, sc, msg)
+	msg, sc, _, _ = s.SessionRepository.CheckSession(c, ctx, users.UidUser.String(), loginpin.DeviceId, token.Phone, sc, msg)
 	if sc == 403 {
 		return false, sc, msg, err
 	}
