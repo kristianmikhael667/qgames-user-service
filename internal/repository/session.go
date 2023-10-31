@@ -8,6 +8,7 @@ import (
 	model "main/internal/model"
 	"main/package/util"
 	"strconv"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -66,15 +67,23 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		fmt.Println("msk sini abang")
 		return msg, status, otp, nil
 	} else if sessions.DeviceId != device_id && sessions.Status == true && sessions.LoggedOutAt == nil && status == 200 && int16Value >= sessions.TotalDevice {
+		sessions.TotalDevice = sessions.TotalDevice + 1
+		if !strings.Contains(sessions.DeviceId, device_id) {
+			sessions.DeviceId = sessions.DeviceId + "," + device_id
+		}
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed create session", 500, "Error", err
+		}
 		// User masih login, tapi tiba-tiba ada yg maksa pengen login
-		return "Device Already Login", 403, "Error", nil
+		// return "Device Already Login", 403, "Error", nil
+		return msg, status, otp, nil
 	} else if sessions.LoggedOutAt != nil && sessions.DeviceId != device_id && sessions.Status == false {
 		// User sudah logout di device a tetapi ingin login di device b
 		sessions.Status = true
 		sessions.DeviceId = device_id
 		sessions.LoggedOutAt = nil
 		sessions.LoginInAt = time.Now()
-		sessions.TotalDevice = sessions.TotalDevice - 1
+		sessions.TotalDevice = sessions.TotalDevice + 1
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 			return "Failed update session", 500, otp, nil
 		}
@@ -84,6 +93,7 @@ func (r *session) CreateSession(ctx context.Context, uid_users string, device_id
 		sessions.Status = true
 		sessions.LoggedOutAt = nil
 		sessions.LoginInAt = time.Now()
+		sessions.TotalDevice = sessions.TotalDevice + 1
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 			return "Failed update session", 500, otp, nil
 		}
@@ -149,6 +159,17 @@ func (r *session) LogoutSession(ctx context.Context, phone string, device *dto.D
 		sessions.LoggedOutAt = &now
 	}
 	sessions.Status = false
+
+	// Pisahkan perangkat yang ingin dihapus dari string "Device"
+	devices := strings.Split(sessions.DeviceId, ",")
+	var newDevices []string
+	for _, d := range devices {
+		if d != device.DeviceId {
+			newDevices = append(newDevices, d)
+		}
+	}
+	sessions.DeviceId = strings.Join(newDevices, ",")
+
 	if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 		return "Failed update session", 500, err
 	}
