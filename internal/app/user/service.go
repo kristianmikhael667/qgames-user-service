@@ -174,7 +174,7 @@ func (s *service) Logout(c echo.Context, ctx context.Context, uiduser string) (s
 	}
 
 	// 2. Delete Session
-	msg, sc, err = s.SessionRepository.LogoutSession(c, ctx, users.Phone)
+	msg, sc, err = s.SessionRepository.LogoutSession(c, ctx, users)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
 		return msg, sc, err

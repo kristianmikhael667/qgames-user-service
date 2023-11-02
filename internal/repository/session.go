@@ -17,7 +17,7 @@ import (
 type Session interface {
 	CreateSession(c echo.Context, ctx context.Context, uid_users string, phone string, status int, msg string) (string, int, error)
 	UpdateSession(c echo.Context, ctx context.Context, users model.User, session *dto.ReqSessionReset) (string, int, error)
-	LogoutSession(c echo.Context, ctx context.Context, phone string) (string, int, error)
+	LogoutSession(c echo.Context, ctx context.Context, user model.User) (string, int, error)
 	CheckSession(c echo.Context, ctx context.Context, uid_users string, phone string, status int, msg string) (string, int, string, error)
 	CheckSessionPin(c echo.Context, ctx context.Context, uid_users string, phone string, status int, msg string) (string, int, error)
 	CheckSessionReset(c echo.Context, ctx context.Context, uid_users, phone string) (string, int, error)
@@ -183,118 +183,50 @@ func (r *session) UpdateSession(c echo.Context, ctx context.Context, users model
 	return "Success Reset Device ID", 200, nil
 }
 
-func (r *session) LogoutSession(c echo.Context, ctx context.Context, phone string) (string, int, error) {
+func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.User) (string, int, error) {
 	var sessions model.Session
-	var users model.User
-	totalDevice := util.Getenv("TOTAL_DEVICE", "")
-	intDevice, _ := strconv.ParseInt(totalDevice, 10, 16)
-	intValue := int(intDevice)
+
 	// Header Application
 	apps := c.Request().Header.Get("Application")
-	device_id := c.Request().Header.Get("DeviceId")
-
-	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", phone).First(&users).Error; err != nil {
-		return "Phone not found in users", 404, err
-	}
-
-	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", users.UidUser).First(&sessions).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", user.UidUser).First(&sessions).Error; err != nil {
 		return "User ID not found in session", 404, err
 	}
 
-	// Device ID
-	deviceId := device_id
-	deviceIDSlice := strings.Split(deviceId, ",")
-	var foundDeviceID string
+	deviceIDs := strings.Split(sessions.DeviceId, ",")
+	applications := strings.Split(sessions.Application, ",")
 
-	for _, device_id := range deviceIDSlice {
-		if device_id == device_id {
-			foundDeviceID = device_id
-			break
-		}
-	}
-	if foundDeviceID == "" {
-		return "Device ID not found in session", 404, nil
-	}
-
-	// Application
-	appId := sessions.Application
-	appsSlice := strings.Split(appId, ",")
-	var foundApps string
-
-	for _, app := range appsSlice {
+	var isApps bool
+	var qgamesIndex = 0
+	for _, app := range applications {
 		if app == apps {
-			foundApps = apps
+			isApps = true
 			break
 		}
 	}
-	if foundApps == "" {
-		return "Application not found in session", 404, nil
-	}
 
-	if len(deviceIDSlice) >= intValue && len(appsSlice) >= intValue {
-		if foundDeviceID != "" && foundApps != "" {
-			// Device ID
-			var newDeviceIDs []string
-			for _, device_id := range deviceIDSlice {
-				if device_id != device_id {
-					newDeviceIDs = append(newDeviceIDs, device_id)
-				}
-			}
-			updatedDeviceString := strings.Join(newDeviceIDs, ",")
-
-			// Apps
-			var newAppsIDs []string
-			for _, app := range appsSlice {
-				if app != apps {
-					newAppsIDs = append(newAppsIDs, app)
-				}
-			}
-			updatedAppsString := strings.Join(newAppsIDs, ",")
-
-			// Update data
-			sessions.DeviceId = updatedDeviceString
-			sessions.Application = updatedAppsString
-			sessions.TotalDevice = sessions.TotalDevice - 1
-		}
-
-		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
-			return "Failed update session", 500, err
-		}
-
-		return "Success Remove Session Device 2", 201, nil
-	} else if len(deviceIDSlice) == 1 && len(appsSlice) >= intValue {
-		// Apps
-		var newAppsIDs []string
-		for _, app := range appsSlice {
-			if app != apps {
-				newAppsIDs = append(newAppsIDs, app)
-			}
-		}
-		updatedAppsString := strings.Join(newAppsIDs, ",")
-
-		// Update data
-		sessions.Application = updatedAppsString
+	if isApps {
+		deviceIDs[qgamesIndex] = ""
+		applications[qgamesIndex] = ""
+		updatedDeviceID := strings.Join(deviceIDs, "")
+		updatedAppsID := strings.Join(applications, "")
+		sessions.DeviceId = updatedDeviceID
+		sessions.Application = updatedAppsID
 		sessions.TotalDevice = sessions.TotalDevice - 1
-
-		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
-			return "Failed update session", 500, err
-		}
-		return "Success Remove Session Apps 2", 201, nil
-	} else {
-		if sessions.LoggedOutAt == nil {
+		if sessions.TotalDevice < 1 {
 			now := time.Now()
+			sessions.DeviceId = updatedDeviceID
+			sessions.Application = updatedAppsID
 			sessions.LoggedOutAt = &now
-			sessions.TotalDevice = sessions.TotalDevice - 1
-			sessions.DeviceId = ""
-			sessions.Application = ""
+			sessions.Status = false
 		}
-		sessions.Status = false
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
-			return "Failed update session", 500, err
+			return "Failed Update Session", 500, err
 		}
-
-		return "Success Remove Session Device 1", 201, nil
+	} else {
+		return "Not Found Aplication", 404, nil
 	}
+
+	return "Success Reset Device ID", 200, nil
 }
 
 func (r *session) CheckSession(c echo.Context, ctx context.Context, uid_users string, phone string, status int, msg string) (string, int, string, error) {
@@ -316,23 +248,28 @@ func (r *session) CheckSession(c echo.Context, ctx context.Context, uid_users st
 
 	// Check all device id
 	devices := strings.Split(sessions.DeviceId, ",")
-	for _, d := range devices {
+	var positionDevice int
+	for i, d := range devices {
 		if d == device_id {
 			isDevice = true
+			positionDevice = i
 			break
 		}
 	}
 
 	// Check name application
 	application := strings.Split(sessions.Application, ",")
-	for _, d := range application {
+	var positionApps int
+	for i, d := range application {
 		if d == apps {
 			isApps = true
+			positionApps = i
 			break
 		}
 	}
 
-	if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil && sessions.TotalDevice <= int16Value {
+	if isDevice && isApps && positionDevice == positionApps && sessions.Status == true && sessions.LoggedOutAt == nil && sessions.TotalDevice <= int16Value {
+		// Device ID harus sesuai dengan application
 		// User sudah ada device id yang sama ketika login
 		return msg, status, otp, nil
 	} else if sessions.TotalDevice >= int16Value {
@@ -368,23 +305,27 @@ func (r *session) CheckSessionPin(c echo.Context, ctx context.Context, uid_users
 
 	// Check all device id
 	devices := strings.Split(sessions.DeviceId, ",")
-	for _, d := range devices {
+	var positionDevice int
+	for i, d := range devices {
 		if d == device_id {
 			isDevice = true
+			positionDevice = i
 			break
 		}
 	}
 
 	// Check name application
 	application := strings.Split(sessions.Application, ",")
-	for _, d := range application {
+	var positionApps int
+	for i, d := range application {
 		if d == apps {
 			isApps = true
+			positionApps = i
 			break
 		}
 	}
 
-	if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil {
+	if isDevice && isApps && positionDevice == positionApps && sessions.Status == true && sessions.LoggedOutAt == nil {
 		// User sudah ada device id yang sama ketika login
 		return msg, status, nil
 	} else if isDevice == false {
