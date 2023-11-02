@@ -23,15 +23,12 @@ type (
 	}
 
 	LoginByPin struct {
-		Phone    string `json:"phone" validate:"required"`
-		Pin      string `json:"pin" validate:"required"`
-		DeviceId string `json:"device_id" validate:"required"`
-		FcmToken string `json:"fcm_token" validate:"required"`
+		Phone string `json:"phone" validate:"required"`
+		Pin   string `json:"pin" validate:"required"`
 	}
 
 	CheckPin struct {
-		Pin      string `json:"pin" validate:"required"`
-		DeviceId string `json:"device_id" validate:"required"`
+		Pin string `json:"pin" validate:"required"`
 	}
 
 	RefreshToken struct {
@@ -44,9 +41,7 @@ type (
 	}
 
 	CheckPhoneReqBody struct {
-		Phone    string `json:"phone" validate:"required"`
-		DeviceId string `json:"device_id" validate:"required"`
-		FcmToken string `json:"fcm_token" validate:"required"`
+		Phone string `json:"phone" validate:"required"`
 	}
 
 	PhoneAuditTester struct {
@@ -57,20 +52,14 @@ type (
 		Phone string `json:"phone" validate:"required"`
 	}
 
-	DeviceId struct {
-		DeviceId string `json:"device_id" validate:"required"`
-	}
-
 	ReqSessionReset struct {
-		Phone    string `json:"phone" validate:"required"`
-		Otp      string `json:"otp" validate:"required"`
-		DeviceID string `json:"device_id" validate:"required"`
+		Phone string `json:"phone" validate:"required"`
+		Otp   string `json:"otp" validate:"required"`
 	}
 
 	RequestPhoneOtp struct {
-		Phone    string `json:"phone" validate:"required"`
-		Otp      string `json:"otp" validate:"required"`
-		DeviceID string `json:"device_id" validate:"required"`
+		Phone string `json:"phone" validate:"required"`
+		Otp   string `json:"otp" validate:"required"`
 	}
 
 	JWTClaims struct {

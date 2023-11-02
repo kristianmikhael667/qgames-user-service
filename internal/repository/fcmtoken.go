@@ -7,12 +7,13 @@ import (
 	"main/internal/model"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Fcmtoken interface {
-	CreateFCMTokenUser(ctx context.Context, userid, fcmtoken string) (string, error)
+	CreateFCMTokenUser(c echo.Context, ctx context.Context, userid string) (string, error)
 }
 
 type fcmtoken struct {
@@ -25,7 +26,8 @@ func NewFcmToken(db *mongo.Collection) *fcmtoken {
 	}
 }
 
-func (r *fcmtoken) CreateFCMTokenUser(ctx context.Context, userid, fcmtoken string) (string, error) {
+func (r *fcmtoken) CreateFCMTokenUser(c echo.Context, ctx context.Context, userid string) (string, error) {
+	fcmtoken := c.Request().Header.Get("FcmToken")
 
 	filter := bson.M{"user_id": userid}
 

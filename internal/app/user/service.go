@@ -23,10 +23,10 @@ type service struct {
 type Service interface {
 	Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*pkgdto.SearchGetResponse[dto.UsersResponse], error)
 	FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (*dto.UsersResponse, error)
-	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error)
+	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int, string, error)
 	GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error)
 	ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error)
-	Logout(c echo.Context, ctx context.Context, uiduser string, payload *dto.DeviceId) (string, int, error)
+	Logout(c echo.Context, ctx context.Context, uiduser string) (string, int, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -96,7 +96,7 @@ func (s *service) FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (
 	return &result, err
 }
 
-func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error) {
+func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int, string, error) {
 	var result *dto.UsersResponse
 	// Update
 	data, sc, msg, err := s.UserRepository.UpdateAccount(ctx, payloads.Uid, payload)
@@ -165,7 +165,7 @@ func (s *service) ResetPin(ctx context.Context, uiduser string, payload *dto.Con
 	return result, sc, msg, nil
 }
 
-func (s *service) Logout(c echo.Context, ctx context.Context, uiduser string, payload *dto.DeviceId) (string, int, error) {
+func (s *service) Logout(c echo.Context, ctx context.Context, uiduser string) (string, int, error) {
 	// 1. Check Account
 	users, sc, msg, err := s.UserRepository.MyAccount(ctx, uiduser)
 	if err != nil {
@@ -174,7 +174,7 @@ func (s *service) Logout(c echo.Context, ctx context.Context, uiduser string, pa
 	}
 
 	// 2. Delete Session
-	msg, sc, err = s.SessionRepository.LogoutSession(c, ctx, users.Phone, payload)
+	msg, sc, err = s.SessionRepository.LogoutSession(c, ctx, users.Phone)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
 		return msg, sc, err

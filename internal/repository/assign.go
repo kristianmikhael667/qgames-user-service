@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"main/helper"
 	"main/internal/dto"
 	model "main/internal/model"
@@ -55,6 +56,7 @@ func (r *assigns) GetAssignUsers(ctx context.Context, uidusers string) ([]model.
 	if err := r.Db.WithContext(ctx).Where("users = ? ", uidusers).Find(&assign).Error; err != nil {
 		helper.Logger("error", "Assign Not Found", "Rc: "+string(rune(404)))
 	}
+	fmt.Println("dalamannya > ", assign)
 	return assign, nil
 }
 

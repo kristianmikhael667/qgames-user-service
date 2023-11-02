@@ -7,7 +7,7 @@ import (
 	utils "main/package/util"
 )
 
-func AuditOTPPlayStore(datausers model.User, response_assign []model.Assign, result *dto.UserWithJWTResponse, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, int16, string, error) {
+func AuditOTPPlayStore(datausers model.User, response_assign []model.Assign, result *dto.UserWithJWTResponse, validotp *dto.RequestPhoneOtp) (*dto.UserWithJWTResponse, int, string, error) {
 	if validotp.Otp != utils.Getenv("OTP_FAKE", "000000") {
 		return result, 401, "Wrong OTP Tester", nil
 	}
@@ -49,7 +49,7 @@ func AuditOTPDevicePlayStore(otp string) (string, int, error) {
 	return "Send OTP Reset", 201, nil
 }
 
-func AuditResetDeviceOTP(datausers model.User, response_assign []model.Assign, result *dto.UserWithJWTResponse, validotp *dto.ReqSessionReset) (*dto.UserWithJWTResponse, int16, string, error) {
+func AuditResetDeviceOTP(datausers model.User, response_assign []model.Assign, result *dto.UserWithJWTResponse, validotp *dto.ReqSessionReset) (*dto.UserWithJWTResponse, int, string, error) {
 	if validotp.Otp != utils.Getenv("OTP_FAKE", "000000") {
 		return result, 401, "Wrong OTP Tester", nil
 	}
