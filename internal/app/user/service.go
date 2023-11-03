@@ -15,9 +15,10 @@ import (
 )
 
 type service struct {
-	UserRepository    repository.User
-	AssignRepository  repository.Assign
-	SessionRepository repository.Session
+	UserRepository     repository.User
+	AssignRepository   repository.Assign
+	SessionRepository  repository.Session
+	FcmTokenRepository repository.Fcmtoken
 }
 
 type Service interface {
@@ -31,9 +32,10 @@ type Service interface {
 
 func NewService(f *factory.Factory) Service {
 	return &service{
-		UserRepository:    f.UserRepository,
-		AssignRepository:  f.AssignRepository,
-		SessionRepository: f.SessionRepository,
+		UserRepository:     f.UserRepository,
+		AssignRepository:   f.AssignRepository,
+		SessionRepository:  f.SessionRepository,
+		FcmTokenRepository: f.FcmTokenRepository,
 	}
 }
 
@@ -178,6 +180,13 @@ func (s *service) Logout(c echo.Context, ctx context.Context, uiduser string) (s
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
 		return msg, sc, err
+	}
+
+	// 3. delete fcm
+	msgfcm, scfcm, err := s.FcmTokenRepository.LogoutFCMTokenUser(c, ctx, users.UidUser.String())
+	if err != nil {
+		helper.Logger("error", msgfcm, "Rc: "+string(rune(sc)))
+		return msgfcm, scfcm, err
 	}
 
 	return msg, sc, err

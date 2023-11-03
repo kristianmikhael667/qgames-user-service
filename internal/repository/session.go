@@ -185,6 +185,9 @@ func (r *session) UpdateSession(c echo.Context, ctx context.Context, users model
 
 func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.User) (string, int, error) {
 	var sessions model.Session
+	totalDevice := util.Getenv("TOTAL_DEVICE", "")
+	intDevice, _ := strconv.ParseInt(totalDevice, 10, 16)
+	intValue := int(intDevice)
 
 	// Header Application
 	apps := c.Request().Header.Get("Application")
@@ -197,14 +200,15 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 
 	var isApps bool
 	var qgamesIndex = 0
-	for _, app := range applications {
+	for i, app := range applications {
 		if app == apps {
 			isApps = true
+			qgamesIndex = i
 			break
 		}
 	}
 
-	if isApps {
+	if isApps && len(deviceIDs) == intValue && len(applications) == intValue {
 		deviceIDs[qgamesIndex] = ""
 		applications[qgamesIndex] = ""
 		updatedDeviceID := strings.Join(deviceIDs, "")
@@ -212,13 +216,29 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 		sessions.DeviceId = updatedDeviceID
 		sessions.Application = updatedAppsID
 		sessions.TotalDevice = sessions.TotalDevice - 1
-		if sessions.TotalDevice < 1 {
-			now := time.Now()
-			sessions.DeviceId = updatedDeviceID
-			sessions.Application = updatedAppsID
-			sessions.LoggedOutAt = &now
-			sessions.Status = false
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed Update Session", 500, err
 		}
+	} else if isApps && len(deviceIDs) == 1 && len(applications) == intValue {
+		applications[qgamesIndex] = ""
+		deviceIDs[qgamesIndex] = ""
+		updatedAppsID := strings.Join(applications, "")
+		sessions.Application = updatedAppsID
+		sessions.TotalDevice = sessions.TotalDevice - 1
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed Update Session", 500, err
+		}
+	} else if isApps && len(deviceIDs) == 1 && len(applications) == 1 {
+		applications[qgamesIndex] = ""
+		deviceIDs[qgamesIndex] = ""
+		updatedDeviceID := strings.Join(deviceIDs, "")
+		updatedAppsID := strings.Join(applications, "")
+		now := time.Now()
+		sessions.DeviceId = updatedDeviceID
+		sessions.Application = updatedAppsID
+		sessions.LoggedOutAt = &now
+		sessions.Status = false
+		sessions.TotalDevice = sessions.TotalDevice - 1
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 			return "Failed Update Session", 500, err
 		}
