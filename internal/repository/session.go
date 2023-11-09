@@ -257,6 +257,16 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 			return "Failed Update Session", 500, err
 		}
+	} else if isApps && len(deviceIDs) == intValue && len(applications) == 1 {
+		// Jika mempunyai 2 device dengan 1 apps
+		fmt.Println("msk 4")
+		deviceIDs[qgamesIndex] = ""
+		updatedDeviceID := strings.Join(deviceIDs, "")
+		sessions.DeviceId = updatedDeviceID
+		sessions.TotalDevice = sessions.TotalDevice - 1
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed Update Session", 500, err
+		}
 	} else {
 		return "Not Found Aplication", 404, nil
 	}
