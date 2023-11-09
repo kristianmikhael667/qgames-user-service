@@ -144,7 +144,7 @@ func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto
 	return user_data, sc, msg, nil
 }
 
-func (s *service) ResetPin(ctx context.Context, roles, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error) {
+func (s *service) ResetPin(ctx context.Context, uiduser string, roles string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error) {
 	var result *dto.UsersResponse
 	// Reset PIN
 	data, sc, msg, err := s.UserRepository.ResetPin(ctx, uiduser, payload)
