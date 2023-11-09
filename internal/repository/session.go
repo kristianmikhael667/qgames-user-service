@@ -211,8 +211,8 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 	}
 
 	var deviceIndex = 0
-	for i, app := range deviceIDs {
-		if app == apps {
+	for i, dev := range deviceIDs {
+		if dev == deviceId {
 			deviceIndex = i
 			break
 		}
