@@ -20,7 +20,7 @@ type Session interface {
 	LogoutSession(c echo.Context, ctx context.Context, user model.User) (string, int, error)
 	CheckSession(c echo.Context, ctx context.Context, uid_users string, phone string, status int, msg string) (string, int, string, error)
 	CheckSessionPin(c echo.Context, ctx context.Context, uid_users string, phone string, status int, msg string) (string, int, error)
-	CheckSessionReset(c echo.Context, ctx context.Context, uid_users, phone string) (string, int, error)
+	CheckSessionReset(c echo.Context, ctx context.Context, uid_users string, phone *dto.CheckSession) (string, int, error)
 }
 
 type session struct {
@@ -356,7 +356,7 @@ func (r *session) CheckSessionPin(c echo.Context, ctx context.Context, uid_users
 	}
 }
 
-func (r *session) CheckSessionReset(c echo.Context, ctx context.Context, uid_users, phone string) (string, int, error) {
+func (r *session) CheckSessionReset(c echo.Context, ctx context.Context, uid_users string, phone *dto.CheckSession) (string, int, error) {
 	var sessions model.Session
 	var isDevice bool
 	var isApps bool
@@ -387,9 +387,11 @@ func (r *session) CheckSessionReset(c echo.Context, ctx context.Context, uid_use
 		}
 	}
 
-	if isDevice == false && isApps == true {
+	if phone.Reset == "device-id" && isDevice == false && isApps == true {
 		// if device id tidak ada di session artinya baru, maka akan validasi otp
 		return "Send OTP For New Device ID", 201, nil
+	} else if phone.Reset == "pin" && isDevice == true && isApps == true {
+		return "Send OTP For New PIN", 201, nil
 	} else {
 		return "Not Found Application or haven't new Device ID", 403, nil
 	}

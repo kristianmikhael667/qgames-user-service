@@ -50,6 +50,7 @@ type (
 
 	CheckSession struct {
 		Phone string `json:"phone" validate:"required"`
+		Reset string `json:"reset" validate:"required"`
 	}
 
 	ReqSessionReset struct {

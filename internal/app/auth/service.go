@@ -411,7 +411,7 @@ func (s *service) ConfirmReset(c echo.Context, ctx context.Context, phone *dto.C
 	}
 
 	// Step 3. Create Session and Check Device Id
-	msg, scSess, errSess := s.SessionRepository.CheckSessionReset(c, ctx, users.UidUser.String(), phone.Phone)
+	msg, scSess, errSess := s.SessionRepository.CheckSessionReset(c, ctx, users.UidUser.String(), phone)
 	if errSess != nil {
 		return msg, scSess, errSess
 	}
