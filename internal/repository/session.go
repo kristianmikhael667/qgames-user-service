@@ -209,17 +209,14 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 			break
 		}
 	}
-	fmt.Println("apaa tuh if ? ", isApps)
-	fmt.Println("apaa tuh if ? ", len(deviceIDs) == intValue)
-	fmt.Println("apaa tuh if ? ", len(applications) == intValue)
-	fmt.Println("--------------")
-	fmt.Println("apaa tuh else if ? ", isApps)
-	fmt.Println("apaa tuh else if ? ", len(deviceIDs) == 1)
-	fmt.Println("apaa tuh else if ? ", len(applications) == intValue)
-	fmt.Println("--------------")
-	fmt.Println("apaa tuh else if 2 ? ", isApps)
-	fmt.Println("apaa tuh else if 2 ? ", len(deviceIDs) == 1)
-	fmt.Println("apaa tuh else if 2 ? ", len(applications) == 1)
+
+	var deviceIndex = 0
+	for i, app := range deviceIDs {
+		if app == apps {
+			deviceIndex = i
+			break
+		}
+	}
 
 	if isApps && len(deviceIDs) == intValue && len(applications) == intValue {
 		fmt.Println("msk 1")
@@ -263,7 +260,8 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 		fmt.Println("msk 4 ? ", deviceId)
 		fmt.Println("CEKK ", deviceIDs)
 		fmt.Println("KIDAL ", intValue)
-		deviceIDs[qgamesIndex] = ""
+		fmt.Println("asss ", deviceIndex)
+		deviceIDs[deviceIndex] = ""
 		updatedDeviceID := strings.Join(deviceIDs, "")
 		sessions.DeviceId = updatedDeviceID
 		sessions.TotalDevice = sessions.TotalDevice - 1
