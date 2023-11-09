@@ -399,6 +399,7 @@ func (r *user) ResetPin(ctx context.Context, uid_user string, payload *dto.Confi
 
 	// Set Limit 0
 	var trylimit model.Attempt
+	fmt.Println("lah kocal ", users.Phone)
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", users.Phone).First(&trylimit).Error; err != nil {
 		return users, 404, "Not Found User in TryLimit", err
 	}
