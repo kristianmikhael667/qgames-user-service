@@ -376,7 +376,7 @@ func (r *user) MyAccount(ctx context.Context, iduser string) (model.User, int, s
 func (r *user) ResetPin(ctx context.Context, uid_user string, payload *dto.ConfirmPin) (model.User, int, string, error) {
 	var users model.User
 
-	if err := r.Db.WithContext(ctx).Where("uid_user = ? ", uid_user).Find(&users).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Where("uid_user = ? ", uid_user).First(&users).Error; err != nil {
 		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))
 		return users, 404, "User Not Found", nil
 	}
