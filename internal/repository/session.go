@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"main/helper"
 	dto "main/internal/dto"
 	model "main/internal/model"
@@ -207,8 +208,20 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 			break
 		}
 	}
+	fmt.Println("apaa tuh if ? ", isApps)
+	fmt.Println("apaa tuh if ? ", len(deviceIDs) == intValue)
+	fmt.Println("apaa tuh if ? ", len(applications) == intValue)
+	fmt.Println("--------------")
+	fmt.Println("apaa tuh else if ? ", isApps)
+	fmt.Println("apaa tuh else if ? ", len(deviceIDs) == 1)
+	fmt.Println("apaa tuh else if ? ", len(applications) == intValue)
+	fmt.Println("--------------")
+	fmt.Println("apaa tuh else if 2 ? ", isApps)
+	fmt.Println("apaa tuh else if 2 ? ", len(deviceIDs) == 1)
+	fmt.Println("apaa tuh else if 2 ? ", len(applications) == 1)
 
 	if isApps && len(deviceIDs) == intValue && len(applications) == intValue {
+		fmt.Println("msk 1")
 		deviceIDs[qgamesIndex] = ""
 		applications[qgamesIndex] = ""
 		updatedDeviceID := strings.Join(deviceIDs, "")
@@ -220,6 +233,7 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 			return "Failed Update Session", 500, err
 		}
 	} else if isApps && len(deviceIDs) == 1 && len(applications) == intValue {
+		fmt.Println("msk 2")
 		applications[qgamesIndex] = ""
 		deviceIDs[qgamesIndex] = ""
 		updatedAppsID := strings.Join(applications, "")
@@ -229,6 +243,7 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 			return "Failed Update Session", 500, err
 		}
 	} else if isApps && len(deviceIDs) == 1 && len(applications) == 1 {
+		fmt.Println("msk 3")
 		applications[qgamesIndex] = ""
 		deviceIDs[qgamesIndex] = ""
 		updatedDeviceID := strings.Join(deviceIDs, "")
