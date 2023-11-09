@@ -192,6 +192,7 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 
 	// Header Application
 	apps := c.Request().Header.Get("Application")
+	deviceId := c.Request().Header.Get("DeviceId")
 	if err := r.Db.WithContext(ctx).Model(&model.Session{}).Where("user_id = ?", user.UidUser).First(&sessions).Error; err != nil {
 		return "User ID not found in session", 404, err
 	}
@@ -258,8 +259,10 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 			return "Failed Update Session", 500, err
 		}
 	} else if isApps && len(deviceIDs) == intValue && len(applications) == 1 {
-		// Jika mempunyai 2 device dengan 1 apps
-		fmt.Println("msk 4")
+		// Jika mempunyai 2 device dalam 1 apps
+		fmt.Println("msk 4 ? ", deviceId)
+		fmt.Println("CEKK ", deviceIDs)
+		fmt.Println("KIDAL ", intValue)
 		deviceIDs[qgamesIndex] = ""
 		updatedDeviceID := strings.Join(deviceIDs, "")
 		sessions.DeviceId = updatedDeviceID
