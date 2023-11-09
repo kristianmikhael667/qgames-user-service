@@ -26,7 +26,7 @@ type Service interface {
 	FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (*dto.UsersResponse, error)
 	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int, string, error)
 	GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error)
-	ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error)
+	ResetPin(ctx context.Context, roles, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error)
 	Logout(c echo.Context, ctx context.Context, uiduser string) (string, int, error)
 }
 
@@ -144,7 +144,7 @@ func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto
 	return user_data, sc, msg, nil
 }
 
-func (s *service) ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error) {
+func (s *service) ResetPin(ctx context.Context, roles, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error) {
 	var result *dto.UsersResponse
 	// Reset PIN
 	data, sc, msg, err := s.UserRepository.ResetPin(ctx, uiduser, payload)
@@ -162,6 +162,7 @@ func (s *service) ResetPin(ctx context.Context, uiduser string, payload *dto.Con
 		Profile:   data.Profile,
 		CreatedAt: data.CreatedAt,
 		UpdatedAt: data.UpdatedAt,
+		Roles:     roles,
 	}
 
 	return result, sc, msg, nil

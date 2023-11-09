@@ -141,7 +141,7 @@ func (h *handler) ResetPin(c echo.Context) error {
 	}
 
 	uid := token.Uuid
-	users, sc, msg, err := h.service.ResetPin(c.Request().Context(), uid, payload)
+	users, sc, msg, err := h.service.ResetPin(c.Request().Context(), uid, token.Roles, payload)
 
 	if sc != 201 {
 		return response.CustomErrorBuilder(sc, msg, "Error").Send(c)
