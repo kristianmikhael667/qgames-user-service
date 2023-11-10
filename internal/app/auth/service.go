@@ -148,12 +148,6 @@ func (s *service) RequestOtp(c echo.Context, ctx context.Context, phone *dto.Che
 		return err.Error(), sc, status, err
 	}
 
-	// Step 5. Create FCM Token and Check FCM Token MongoDB
-	_, err_fcm := s.FcmTokenRepository.CreateFCMTokenUser(c, ctx, users.UidUser.String())
-	if err_fcm != nil {
-		return err_fcm.Error(), 500, false, err_fcm
-	}
-
 	// Step 6. Create OTP and if send otp
 	msg, sc, err = s.OtpRepository.SendOtp(ctx, phones, sc, otp, trylimit, msg)
 	if err != nil {
@@ -235,6 +229,12 @@ func (s *service) VerifyOtp(c echo.Context, ctx context.Context, validotp *dto.R
 	msgSess, scode, errSess := s.SessionRepository.CreateSession(c, ctx, response.UidUser.String(), response.Phone, statuscode, msg)
 	if errSess != nil {
 		return result, msgSess, scode, err
+	}
+
+	// Step 5. Create FCM Token and Check FCM Token MongoDB
+	msgFcm, err_fcm := s.FcmTokenRepository.CreateFCMTokenUser(c, ctx, response.UidUser.String())
+	if err_fcm != nil {
+		return result, msgFcm, 500, err_fcm
 	}
 
 	token, err := util.CreateJWTToken(claims)
