@@ -7,12 +7,12 @@ COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -o /qgrowid-user-service
+RUN go build -o /qgames-user-service
 
 # step 2: build a small image
 FROM alpine:3.16.0
 WORKDIR /app
-COPY --from=builder qgrowid-user-service .
+COPY --from=builder qgames-user-service .
 COPY .env .
 EXPOSE 8080
-CMD ["./qgrowid-user-service", "-m=migrate"]
+CMD ["./qgames-user-service", "-m=migrate"]
