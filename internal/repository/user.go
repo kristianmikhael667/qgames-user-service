@@ -21,10 +21,10 @@ type User interface {
 	Save(ctx context.Context, users *dto.RegisterUsersRequestBody) (model.User, error)
 	ExistByEmail(ctx context.Context, email *string) (bool, error)
 	ExistByPhone(ctx context.Context, email string) (bool, error)
-	CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error)
-	CheckUser(ctx context.Context, phone string) (model.User, int16, bool, string, error)
+	CreateUsers(ctx context.Context, phone string) (model.User, bool, int, string, error)
+	CheckUser(ctx context.Context, reqOtp bool, phone string) (model.User, int, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
-	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error)
+	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
 	CheckPin(ctx context.Context, phone string, loginpin string) (bool, int, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error)
@@ -125,16 +125,13 @@ func (r *user) ExistByPhone(ctx context.Context, numbers string) (bool, error) {
 	return isExist, nil
 }
 
-func (r *user) CreateUsers(ctx context.Context, phone string, device_id string) (model.User, int, bool, string, error) {
+func (r *user) CreateUsers(ctx context.Context, phone string) (model.User, bool, int, string, error) {
 	var users model.User
 
-	status_user := false
-
 	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phone).First(&users).Error; err != nil {
-		status_user = true
-
 		newUsers := model.User{
-			Phone: phone,
+			Phone:  phone,
+			Status: "active",
 		}
 
 		if err := r.Db.WithContext(ctx).Save(&newUsers).Error; err != nil {
@@ -142,33 +139,33 @@ func (r *user) CreateUsers(ctx context.Context, phone string, device_id string) 
 			helper.Logger("error", "Failed Create User With Number : "+phone, "400")
 		} else {
 			helper.Logger("info", "Success Create User With Number: "+phone, "Rc: "+string(rune(201)))
-			users.UidUser = newUsers.UidUser
+			return newUsers, true, 205, "New User Successfully Created, Please Register", nil
 		}
 	}
-
-	fmt.Println("ssss ", users.Status)
-	if users.Status != "active" {
-		return users, 201, status_user, "An instruction to verify your phone number has been sent to your phone.", nil
-	} else if users.Fullname == "" && users.Pin == "" && users.Email == "" && users.Address == "" {
-		// user not complate regist, ketika input nomor lagi, maka akan diarahkan ke page regist code 205 Reset Content
-		return users, 205, status_user, "Uncomplate register users, please full regist", nil
-	} else {
-		return users, 200, false, "Users valid with pin", nil
-	}
+	return users, false, 201, "Users valid with pin", nil
 }
 
-func (r *user) CheckUser(ctx context.Context, phone string) (model.User, int16, bool, string, error) {
+func (r *user) CheckUser(ctx context.Context, reqOtp bool, phone string) (model.User, int, bool, string, error) {
 	var users model.User
 
-	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phone).First(&users).Error; err != nil {
-		return users, 404, false, "Users not found with checkuser", nil
+	if reqOtp {
+		if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phone).First(&users).Error; err != nil {
+			return users, 201, true, "An instruction to verify your phone number has been sent to your phone.", nil
+		}
+	} else {
+		if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phone).First(&users).Error; err != nil {
+			return users, 404, false, "Users not found with checkuser", nil
+		}
 	}
 
 	if users.Fullname == "" && users.Pin == "" && users.Email == "" && users.Address == "" {
 		// user not complate regist, ketika input nomor lagi, maka akan diarahkan ke page regist code 205 Reset Content
 		return users, 205, true, "Uncomplate register users, please full regist", nil
 	} else {
-		return users, 201, false, "Users valid with pin", nil
+		if reqOtp {
+			return users, 200, false, "Users valid from request otp", nil
+		}
+		return users, 201, false, "Users valid with otp", nil
 	}
 }
 
@@ -199,11 +196,6 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 		return users, false, "Expired Otp", nil
 	}
 
-	// Get users
-	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ? ", phones).First(&users).Error; err != nil {
-		helper.Logger("error", "Number not found", "Rc: "+string(rune(403)))
-		return users, false, "Number not found", err
-	}
 	// Compare OTP
 	check := helper.VerifyOtp(phones, otps, otp.Otp)
 	if check == false {
@@ -216,16 +208,10 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 		fmt.Println("Error:", result.Error)
 	}
 
-	// Update User
-	users.Status = "active"
-	if err := r.Db.WithContext(ctx).Save(&users).Error; err != nil {
-		return users, false, "Failed Created status user", err
-	}
-
 	return users, true, "Success verify OTP", nil
 }
 
-func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int16, string, error) {
+func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int, string, error) {
 	var user model.User
 
 	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("uid_user = ?", uuid).First(&user).Error; err != nil {
@@ -389,8 +375,7 @@ func (r *user) MyAccount(ctx context.Context, iduser string) (model.User, int, s
 
 func (r *user) ResetPin(ctx context.Context, uid_user string, payload *dto.ConfirmPin) (model.User, int, string, error) {
 	var users model.User
-
-	if err := r.Db.WithContext(ctx).Where("uid_user = ? ", uid_user).Find(&users).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Where("uid_user = ? ", uid_user).First(&users).Error; err != nil {
 		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))
 		return users, 404, "User Not Found", nil
 	}
@@ -413,6 +398,7 @@ func (r *user) ResetPin(ctx context.Context, uid_user string, payload *dto.Confi
 
 	// Set Limit 0
 	var trylimit model.Attempt
+	fmt.Println("lah kocal ", users.Phone)
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", users.Phone).First(&trylimit).Error; err != nil {
 		return users, 404, "Not Found User in TryLimit", err
 	}

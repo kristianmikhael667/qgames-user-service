@@ -7,12 +7,14 @@ import (
 	"main/internal/model"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Fcmtoken interface {
-	CreateFCMTokenUser(ctx context.Context, userid, fcmtoken string) (string, error)
+	CreateFCMTokenUser(c echo.Context, ctx context.Context, userid string) (string, error)
+	LogoutFCMTokenUser(c echo.Context, ctx context.Context, userid string) (string, int, error)
 }
 
 type fcmtoken struct {
@@ -25,9 +27,11 @@ func NewFcmToken(db *mongo.Collection) *fcmtoken {
 	}
 }
 
-func (r *fcmtoken) CreateFCMTokenUser(ctx context.Context, userid, fcmtoken string) (string, error) {
+func (r *fcmtoken) CreateFCMTokenUser(c echo.Context, ctx context.Context, userid string) (string, error) {
+	fcmtoken := c.Request().Header.Get("FcmToken")
+	apps := c.Request().Header.Get("Application")
 
-	filter := bson.M{"user_id": userid}
+	filter := bson.M{"user_id": userid, "application": apps}
 
 	var existingDocument model.FCMToken
 
@@ -36,10 +40,11 @@ func (r *fcmtoken) CreateFCMTokenUser(ctx context.Context, userid, fcmtoken stri
 	if err == mongo.ErrNoDocuments {
 		// Dokumen tidak ditemukan, maka Anda bisa membuatnya
 		newFcm := model.FCMToken{
-			UserId:    userid,
-			Fcm:       fcmtoken,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			UserId:      userid,
+			Fcm:         fcmtoken,
+			Application: apps,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 		_, err := r.Db.InsertOne(ctx, newFcm)
 		if err != nil {
@@ -53,15 +58,38 @@ func (r *fcmtoken) CreateFCMTokenUser(ctx context.Context, userid, fcmtoken stri
 		// Dokumen sudah ada, namun perlu pengecekan apakah fcm berbeda
 		if existingDocument.Fcm != fcmtoken {
 			// if not the same, do update
-			update := bson.M{
-				"$set": bson.M{"fcm": fcmtoken},
+			// update := bson.M{
+			// 	"$set": bson.M{"fcm": fcmtoken},
+			// }
+			// _, err := r.Db.UpdateOne(ctx, filter, update)
+			// if err != nil {
+			// 	return "Error updating document", err
+			// }
+			// return "Document updated", nil
+			newFcm := model.FCMToken{
+				UserId:      userid,
+				Fcm:         fcmtoken,
+				Application: apps,
+				CreatedAt:   time.Now(),
+				UpdatedAt:   time.Now(),
 			}
-			_, err := r.Db.UpdateOne(ctx, filter, update)
+			_, err := r.Db.InsertOne(ctx, newFcm)
 			if err != nil {
-				return "Error updating document", err
+				log.Fatal(err)
 			}
-			return "Document updated", nil
+			return "Document created", err
 		}
 		return "Document already", nil
 	}
+}
+
+func (r *fcmtoken) LogoutFCMTokenUser(c echo.Context, ctx context.Context, userid string) (string, int, error) {
+	apps := c.Request().Header.Get("Application")
+	filter := bson.M{"user_id": userid, "application": apps}
+	// Menghapus semua data yang sesuai dengan filter
+	_, err := r.Db.DeleteMany(ctx, filter)
+	if err != nil {
+		return "Error delete document", 500, err
+	}
+	return "Success delete document", 200, err
 }

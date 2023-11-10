@@ -11,7 +11,7 @@ import (
 
 type Attempt interface {
 	CreateAttempt(ctx context.Context, phone string) (model.Attempt, int, string, error)
-	UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error)
+	UpdateAttemptOtp(ctx context.Context, phone string) (int, string, error)
 }
 
 type attempt struct {
@@ -45,7 +45,7 @@ func (r *attempt) CreateAttempt(ctx context.Context, phone string) (model.Attemp
 	return trylimit, 200, "Attempt already", nil
 }
 
-func (r *attempt) UpdateAttemptOtp(ctx context.Context, phone string) (int16, string, error) {
+func (r *attempt) UpdateAttemptOtp(ctx context.Context, phone string) (int, string, error) {
 	var attemp model.Attempt
 
 	phones := strings.Replace(phone, "+62", "0", -1)

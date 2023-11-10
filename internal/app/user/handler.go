@@ -141,7 +141,7 @@ func (h *handler) ResetPin(c echo.Context) error {
 	}
 
 	uid := token.Uuid
-	users, sc, msg, err := h.service.ResetPin(c.Request().Context(), uid, payload)
+	users, sc, msg, err := h.service.ResetPin(c.Request().Context(), uid, token.Roles, payload)
 
 	if sc != 201 {
 		return response.CustomErrorBuilder(sc, msg, "Error").Send(c)
@@ -157,18 +157,8 @@ func (h *handler) Logout(c echo.Context) error {
 		return res.ErrorBuilder(&res.ErrorConstant.Unauthorized, err).Send(c)
 	}
 
-	payload := new(dto.DeviceId)
-
-	if err := c.Bind(payload); err != nil {
-		return response.ErrorBuilder(&response.ErrorConstant.BadRequest, err).Send(c)
-	}
-
-	if err := c.Validate(payload); err != nil {
-		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
-	}
-
 	uid := token.Uuid
-	msg, sc, err := h.service.Logout(c.Request().Context(), uid, payload)
+	msg, sc, err := h.service.Logout(c, c.Request().Context(), uid)
 
 	if sc != 201 && sc != 200 {
 		return response.CustomErrorBuilder(sc, msg, "Error").Send(c)

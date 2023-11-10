@@ -10,28 +10,32 @@ import (
 	repository "main/internal/repository"
 	pkgdto "main/package/dto"
 	res "main/package/util/response"
+
+	"github.com/labstack/echo/v4"
 )
 
 type service struct {
-	UserRepository    repository.User
-	AssignRepository  repository.Assign
-	SessionRepository repository.Session
+	UserRepository     repository.User
+	AssignRepository   repository.Assign
+	SessionRepository  repository.Session
+	FcmTokenRepository repository.Fcmtoken
 }
 
 type Service interface {
 	Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*pkgdto.SearchGetResponse[dto.UsersResponse], error)
 	FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (*dto.UsersResponse, error)
-	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error)
+	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int, string, error)
 	GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error)
-	ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error)
-	Logout(ctx context.Context, uiduser string, payload *dto.DeviceId) (string, int, error)
+	ResetPin(ctx context.Context, roles, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error)
+	Logout(c echo.Context, ctx context.Context, uiduser string) (string, int, error)
 }
 
 func NewService(f *factory.Factory) Service {
 	return &service{
-		UserRepository:    f.UserRepository,
-		AssignRepository:  f.AssignRepository,
-		SessionRepository: f.SessionRepository,
+		UserRepository:     f.UserRepository,
+		AssignRepository:   f.AssignRepository,
+		SessionRepository:  f.SessionRepository,
+		FcmTokenRepository: f.FcmTokenRepository,
 	}
 }
 
@@ -94,7 +98,7 @@ func (s *service) FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (
 	return &result, err
 }
 
-func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int16, string, error) {
+func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int, string, error) {
 	var result *dto.UsersResponse
 	// Update
 	data, sc, msg, err := s.UserRepository.UpdateAccount(ctx, payloads.Uid, payload)
@@ -140,7 +144,7 @@ func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto
 	return user_data, sc, msg, nil
 }
 
-func (s *service) ResetPin(ctx context.Context, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error) {
+func (s *service) ResetPin(ctx context.Context, uiduser string, roles string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error) {
 	var result *dto.UsersResponse
 	// Reset PIN
 	data, sc, msg, err := s.UserRepository.ResetPin(ctx, uiduser, payload)
@@ -158,12 +162,13 @@ func (s *service) ResetPin(ctx context.Context, uiduser string, payload *dto.Con
 		Profile:   data.Profile,
 		CreatedAt: data.CreatedAt,
 		UpdatedAt: data.UpdatedAt,
+		Roles:     roles,
 	}
 
 	return result, sc, msg, nil
 }
 
-func (s *service) Logout(ctx context.Context, uiduser string, payload *dto.DeviceId) (string, int, error) {
+func (s *service) Logout(c echo.Context, ctx context.Context, uiduser string) (string, int, error) {
 	// 1. Check Account
 	users, sc, msg, err := s.UserRepository.MyAccount(ctx, uiduser)
 	if err != nil {
@@ -172,10 +177,17 @@ func (s *service) Logout(ctx context.Context, uiduser string, payload *dto.Devic
 	}
 
 	// 2. Delete Session
-	msg, sc, err = s.SessionRepository.LogoutSession(ctx, users.Phone, payload)
+	msg, sc, err = s.SessionRepository.LogoutSession(c, ctx, users)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
 		return msg, sc, err
+	}
+
+	// 3. delete fcm
+	msgfcm, scfcm, err := s.FcmTokenRepository.LogoutFCMTokenUser(c, ctx, users.UidUser.String())
+	if err != nil {
+		helper.Logger("error", msgfcm, "Rc: "+string(rune(sc)))
+		return msgfcm, scfcm, err
 	}
 
 	return msg, sc, err
