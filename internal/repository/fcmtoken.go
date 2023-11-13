@@ -55,17 +55,7 @@ func (r *fcmtoken) CreateFCMTokenUser(c echo.Context, ctx context.Context, useri
 		fmt.Println("error sni ", err.Error())
 		return "Error created document", err
 	} else {
-		// Dokumen sudah ada, namun perlu pengecekan apakah fcm berbeda
-		if existingDocument.Fcm != fcmtoken {
-			// if not the same, do update
-			// update := bson.M{
-			// 	"$set": bson.M{"fcm": fcmtoken},
-			// }
-			// _, err := r.Db.UpdateOne(ctx, filter, update)
-			// if err != nil {
-			// 	return "Error updating document", err
-			// }
-			// return "Document updated", nil
+		if existingDocument.Application != apps && existingDocument.Fcm != fcmtoken {
 			newFcm := model.FCMToken{
 				UserId:      userid,
 				Fcm:         fcmtoken,
@@ -78,8 +68,19 @@ func (r *fcmtoken) CreateFCMTokenUser(c echo.Context, ctx context.Context, useri
 				log.Fatal(err)
 			}
 			return "Document created", err
+		} else if existingDocument.Application == apps && existingDocument.Fcm != fcmtoken {
+			// if fcm different, but apps the same, do update
+			update := bson.M{
+				"$set": bson.M{"fcm": fcmtoken},
+			}
+			_, err := r.Db.UpdateOne(ctx, filter, update)
+			if err != nil {
+				return "Error updating document", err
+			}
+			return "Document updated", nil
+		} else {
+			return "Document already", nil
 		}
-		return "Document already", nil
 	}
 }
 
