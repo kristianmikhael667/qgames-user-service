@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"main/helper"
 	"main/package/constant"
 
@@ -128,12 +129,12 @@ func (s *service) GetUserDetail(c echo.Context, ctx context.Context, roles, idus
 	if err != nil {
 		return nil, sc, msg, err
 	}
-
+	fmt.Println("msk ini")
 	msgSess, scSess, _, errSess := s.SessionRepository.CheckSession(c, ctx, users.UidUser.String(), users.Phone, sc, msg)
 	if errSess != nil {
 		return nil, scSess, msgSess, err
 	}
-
+	fmt.Println("msk ini sc ", scSess)
 	if scSess == 403 {
 		return nil, scSess, msgSess, err
 	}
