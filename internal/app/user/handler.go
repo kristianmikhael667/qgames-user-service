@@ -117,7 +117,7 @@ func (h *handler) MyAccount(c echo.Context) error {
 				return res.ErrorResponse(err).Send(c)
 			}
 
-			if sc == 403 {
+			if sc == 403 || sc == 201 {
 				return res.CustomErrorBuilder(sc, msg, "error").Send(c)
 			}
 
