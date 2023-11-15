@@ -25,7 +25,7 @@ type Service interface {
 	Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*pkgdto.SearchGetResponse[dto.UsersResponse], error)
 	FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (*dto.UsersResponse, error)
 	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int, string, error)
-	GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error)
+	GetUserDetail(c echo.Context, ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error)
 	ResetPin(ctx context.Context, roles, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error)
 	Logout(c echo.Context, ctx context.Context, uiduser string) (string, int, error)
 }
@@ -121,12 +121,21 @@ func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersR
 	return result, sc, msg, nil
 }
 
-func (s *service) GetUserDetail(ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error) {
+func (s *service) GetUserDetail(c echo.Context, ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error) {
 	var user_data *dto.UsersResponse
 
 	users, sc, msg, err := s.UserRepository.MyAccount(ctx, iduser)
 	if err != nil {
 		return nil, sc, msg, err
+	}
+
+	msgSess, scSess, _, errSess := s.SessionRepository.CheckSession(c, ctx, users.UidUser.String(), users.Phone, sc, msg)
+	if errSess != nil {
+		return nil, scSess, msgSess, err
+	}
+
+	if scSess == 403 {
+		return nil, scSess, msgSess, err
 	}
 
 	user_data = &dto.UsersResponse{

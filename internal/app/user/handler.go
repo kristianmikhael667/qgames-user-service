@@ -112,9 +112,13 @@ func (h *handler) MyAccount(c echo.Context) error {
 	for _, permission := range token.Permissions {
 		hasCommonUser := strings.Contains(permission, "common-user")
 		if hasCommonUser {
-			result, sc, msg, err := h.service.GetUserDetail(c.Request().Context(), token.Roles, token.Uuid)
+			result, sc, msg, err := h.service.GetUserDetail(c, c.Request().Context(), token.Roles, token.Uuid)
 			if err != nil {
 				return res.ErrorResponse(err).Send(c)
+			}
+
+			if sc == 403 {
+				return res.CustomErrorBuilder(sc, msg, "error")
 			}
 
 			return res.CustomSuccessBuilder(int(sc), result, msg, nil).Send(c)
