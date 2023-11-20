@@ -8,6 +8,7 @@ import (
 
 	dto "main/internal/dto"
 	"main/internal/factory"
+	"main/internal/pkg/util"
 	repository "main/internal/repository"
 	pkgdto "main/package/dto"
 	res "main/package/util/response"
@@ -25,7 +26,7 @@ type service struct {
 type Service interface {
 	Find(ctx context.Context, payload *pkgdto.SearchGetRequest) (*pkgdto.SearchGetResponse[dto.UsersResponse], error)
 	FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (*dto.UsersResponse, error)
-	UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int, string, error)
+	UpdateUsers(ctx context.Context, payload *dto.UpdateUsersReqBody) (*dto.UserWithJWTResponse, int, string, error)
 	GetUserDetail(c echo.Context, ctx context.Context, roles, iduser string) (*dto.UsersResponse, int, string, error)
 	ResetPin(ctx context.Context, roles, uiduser string, payload *dto.ConfirmPin) (*dto.UsersResponse, int, string, error)
 	Logout(c echo.Context, ctx context.Context, uiduser string) (string, int, error)
@@ -99,24 +100,47 @@ func (s *service) FindIdUser(ctx context.Context, payload *pkgdto.ByIDRequest) (
 	return &result, err
 }
 
-func (s *service) UpdateUsers(ctx context.Context, payloads *pkgdto.ByUuidUsersRequest, payload *dto.UpdateUsersReqBody) (*dto.UsersResponse, int, string, error) {
-	var result *dto.UsersResponse
+func (s *service) UpdateUsers(ctx context.Context, payload *dto.UpdateUsersReqBody) (*dto.UserWithJWTResponse, int, string, error) {
+	var result *dto.UserWithJWTResponse
 	// Update
-	data, sc, msg, err := s.UserRepository.UpdateAccount(ctx, payloads.Uid, payload)
+	data, sc, msg, err := s.UserRepository.UpdateAccount(ctx, payload)
 
 	if err != nil {
 		return result, sc, msg, err
 	}
 
-	result = &dto.UsersResponse{
-		Uuid:      data.UidUser.String(),
-		Fullname:  data.Fullname,
-		Phone:     data.Phone,
-		Email:     data.Email,
-		Address:   data.Address,
-		Profile:   data.Profile,
-		CreatedAt: data.CreatedAt,
-		UpdatedAt: data.UpdatedAt,
+	// Get all assign and loop
+	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, data.UidUser.String())
+
+	if err != nil {
+		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+	}
+	firstRole := response_assign[0].Roles
+
+	var permissions []string
+	for _, assign := range response_assign {
+		permissions = append(permissions, assign.Permissions)
+	}
+
+	claims := util.CreateJWTClaims(data.UidUser.String(), data.Email, data.Phone, firstRole, permissions, false)
+
+	token, err := util.CreateJWTToken(claims)
+	if err != nil {
+		return result, 401, msg, err
+	}
+
+	result = &dto.UserWithJWTResponse{
+		UsersResponse: dto.UsersResponse{
+			Uuid:      data.UidUser.String(),
+			Fullname:  data.Fullname,
+			Phone:     data.Phone,
+			Email:     data.Email,
+			Address:   data.Address,
+			Profile:   data.Profile,
+			CreatedAt: data.CreatedAt,
+			UpdatedAt: data.UpdatedAt,
+		},
+		Token: token,
 	}
 
 	return result, sc, msg, nil

@@ -15,4 +15,4 @@ WORKDIR /app
 COPY --from=builder qgames-user-service .
 COPY .env .
 EXPOSE 8080
-CMD ["./qgames-user-service", "-m=migrate"]
+CMD ["./qgames-user-service", "-migrate=migrate"]
