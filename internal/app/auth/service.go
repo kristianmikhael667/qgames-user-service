@@ -459,7 +459,7 @@ func (s *service) ResetDevice(c echo.Context, ctx context.Context, session *dto.
 	}
 
 	// Step 1. Check Verify OTP
-	response, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, session.Phone, session.Otp)
+	_, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, session.Phone, session.Otp)
 	if err != nil {
 		helper.Logger("error", msg, "Rc: "+string(rune(403)))
 		return result, msg, 403, err
@@ -489,7 +489,7 @@ func (s *service) ResetDevice(c echo.Context, ctx context.Context, session *dto.
 		permissions = append(permissions, assign.Permissions)
 	}
 
-	claims := util.CreateJWTClaims(response.UidUser.String(), response.Email, response.Phone, firstRole, permissions, false)
+	claims := util.CreateJWTClaims(responses.UidUser.String(), responses.Email, responses.Phone, firstRole, permissions, false)
 
 	// Update Limit
 	statuscode, msg, err := s.AttemptRepository.UpdateAttemptOtp(ctx, responses.Phone)

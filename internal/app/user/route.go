@@ -9,10 +9,10 @@ import (
 )
 
 func (h *handler) Route(g *echo.Group) {
+	g.PUT("/register-user", h.UpdateUser)
 	g.Use(middleware.JWTMiddleware(dto.JWTClaims{}, util.JWT_SECRET))
 	g.GET("/users", h.Get)
 	g.GET("/user/:id", h.GetUserId)
-	g.PUT("/update-user", h.UpdateUser)
 	g.GET("/myaccount", h.MyAccount)
 	g.POST("/reset-pin", h.ResetPin)
 	g.POST("/logout", h.Logout)

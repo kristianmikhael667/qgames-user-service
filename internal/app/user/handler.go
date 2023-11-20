@@ -76,12 +76,6 @@ func (h *handler) GetUserId(c echo.Context) error {
 }
 
 func (h *handler) UpdateUser(c echo.Context) error {
-	authHeader := c.Request().Header.Get("Authorization")
-	token, err := util.ParseJWTToken(authHeader)
-	if err != nil {
-		return res.ErrorBuilder(&res.ErrorConstant.Unauthorized, err).Send(c)
-	}
-
 	payload := new(dto.UpdateUsersReqBody)
 
 	if err := c.Bind(payload); err != nil {
@@ -92,8 +86,7 @@ func (h *handler) UpdateUser(c echo.Context) error {
 		return response.ErrorBuilder(&response.ErrorConstant.Validation, err).Send(c)
 	}
 
-	uid := token.Uuid
-	users, sc, msg, err := h.service.UpdateUsers(c.Request().Context(), &pkgdto.ByUuidUsersRequest{Uid: uid}, payload)
+	users, sc, msg, err := h.service.UpdateUsers(c.Request().Context(), payload)
 
 	if err != nil || sc != 201 {
 		return response.CustomErrorBuilder(int(sc), msg, err.Error()).Send(c)

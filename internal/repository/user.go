@@ -24,7 +24,7 @@ type User interface {
 	CreateUsers(ctx context.Context, phone string) (model.User, bool, int, string, error)
 	CheckUser(ctx context.Context, reqOtp bool, phone string) (model.User, int, bool, string, error)
 	VerifyOtp(ctx context.Context, phone string, otps string) (model.User, bool, string, error)
-	UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int, string, error)
+	UpdateAccount(ctx context.Context, users *dto.UpdateUsersReqBody) (model.User, int, string, error)
 	LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.User, int, string, error)
 	CheckPin(ctx context.Context, phone string, loginpin string) (bool, int, error)
 	LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (model.User, int, string, error)
@@ -211,10 +211,10 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	return users, true, "Success verify OTP", nil
 }
 
-func (r *user) UpdateAccount(ctx context.Context, uuid string, users *dto.UpdateUsersReqBody) (model.User, int, string, error) {
+func (r *user) UpdateAccount(ctx context.Context, users *dto.UpdateUsersReqBody) (model.User, int, string, error) {
 	var user model.User
 
-	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("uid_user = ?", uuid).First(&user).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&model.User{}).Where("phone = ?", users.Phone).First(&user).Error; err != nil {
 		return user, 403, "Error get users", err
 	}
 
