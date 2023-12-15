@@ -52,9 +52,9 @@ deploy_k8s:
   script:
     - echo "$ID_RSA_K8S" > id_rsa_k8s
     - chmod 600 id_rsa_k8s
-    - ssh -v -o StrictHostKeyChecking=no -i id_rsa_k8s 40798-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster && git checkout dev && git pull origin dev"
-    - ssh -v -o StrictHostKeyChecking=no -i id_rsa_k8s 40798-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster/deployments && kubectl apply -f $K8S_YAML"
-    - ssh -v -o StrictHostKeyChecking=no -i id_rsa_k8s 40798-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster/services && kubectl apply -f $K8S_SERVICE_YAML"
-    - ssh -v -o StrictHostKeyChecking=no -i id_rsa_k8s 40798-4015@gate.infra.dewacloud.com -p 3022 "kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
+    - ssh -v -o StrictHostKeyChecking=no -o GSSAPIAuthentication=no -i id_rsa_k8s 40798-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster && git checkout dev && git pull origin dev"
+    - ssh -v -o StrictHostKeyChecking=no GSSAPIAuthentication=no -i id_rsa_k8s 40798-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster/deployments && kubectl apply -f $K8S_YAML"
+    - ssh -v -o StrictHostKeyChecking=no GSSAPIAuthentication=no -i id_rsa_k8s 40798-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster/services && kubectl apply -f $K8S_SERVICE_YAML"
+    - ssh -v -o StrictHostKeyChecking=no GSSAPIAuthentication=no -i id_rsa_k8s 40798-4015@gate.infra.dewacloud.com -p 3022 "kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
   only:
     - dev
