@@ -50,7 +50,6 @@ k8s_build:
 deploy_k8s:
   stage: deploy
   script:
-    - chmod og= $CI_PROJECT_DIR/$ID_RSA_K8S
     - ssh -i $CI_PROJECT_DIR/$ID_RSA_K8S -o StrictHostKeyChecking=no 40798-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster && git checkout dev && git pull origin dev"
     - ssh -i $CI_PROJECT_DIR/$ID_RSA_K8S -o StrictHostKeyChecking=no 40798-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster/deployments && kubectl apply -f $K8S_YAML"
     - ssh -i $CI_PROJECT_DIR/$ID_RSA_K8S -o StrictHostKeyChecking=no 40798-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster/services && kubectl apply -f $K8S_SERVICE_YAML"
