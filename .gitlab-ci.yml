@@ -45,7 +45,7 @@ variables:
 #     - docker push $K8S_TAG_COMMIT
 #     - docker push $K8S_TAG_LATEST
 #   only:
-#     - dev
+#     - dev 
 
 deploy_k8s:
   stage: deploy
