@@ -66,13 +66,14 @@ variables:
 
 deploy_k8s:
   stage: deploy
-  script:
-    - echo "$K8S_CA_B64" | base64 -d > kubeconfig.yaml
-    - export KUBECONFIG=$PWD/kubeconfig.yaml
-    - kubectl config use-context default
-    - cd qgrowid-cluster && git checkout dev && git pull origin dev
-    - cd deployments && kubectl apply -f $K8S_YAML && cd ..
-    - cd services && kubectl apply -f $K8S_SERVICE_YAML && cd ..
-    - kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE
+  image: dtzar/helm-kubectl
+  script: |-
+      echo "$K8S_TOKEN" | base64 -d > kubeconfig.yaml
+      export KUBECONFIG=$PWD/kubeconfig.yaml
+      kubectl config use-context default
+      cd qgrowid-cluster && git checkout dev && git pull origin dev
+      cd deployments && kubectl apply -f $K8S_YAML && cd ..
+      cd services && kubectl apply -f $K8S_SERVICE_YAML && cd ..
+      kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE
   only:
     - dev
