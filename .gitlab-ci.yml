@@ -67,7 +67,7 @@ variables:
 deploy_k8s:
   stage: deploy
   script:
-    - echo "$K8S_SERVER" | base64 -d > kubeconfig.yaml
+    - echo "$K8S_CA_B64" | base64 -d > kubeconfig.yaml
     - export KUBECONFIG=$PWD/kubeconfig.yaml
     - kubectl config use-context default
     - cd qgrowid-cluster && git checkout dev && git pull origin dev
