@@ -50,7 +50,6 @@ variables:
 deploy_k8s:
   stage: deploy
   script:
-    chmod 
     - ssh -o PubkeyAcceptedKeyTypes=+ssh-rsa -o StrictHostKeyChecking=no 41167-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster && git checkout dev && git pull origin dev"
     - ssh -o PubkeyAcceptedKeyTypes=+ssh-rsa -o StrictHostKeyChecking=no 41167-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster/deployments && kubectl apply -f $K8S_YAML"
     - ssh -o PubkeyAcceptedKeyTypes=+ssh-rsa -o StrictHostKeyChecking=no 41167-4015@gate.infra.dewacloud.com -p 3022 "cd qgrowid-cluster/services && kubectl apply -f $K8S_SERVICE_YAML"
