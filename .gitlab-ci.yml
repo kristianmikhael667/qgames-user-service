@@ -66,6 +66,7 @@ variables:
 
 deploy_k8s:
   stage: deploy
+  image: dtzar/helm-kubectl
   script:
     - echo "$K8S_TOKEN" | base64 -d > kubeconfig.yaml
     - export KUBECONFIG=$PWD/kubeconfig.yaml
