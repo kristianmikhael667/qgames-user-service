@@ -31,50 +31,33 @@ variables:
   K8S_DPL_NAME: qrowid-user-dpl
   K8S_NAMESPACE: qrowid-development
 
-# k8s_build:
-#   stage: build
-#   image: docker:20.10-dind
-#   services:
-#     - docker:20.10-dind
-#   before_script:
-#     - echo -e "DB_HOST=$DB_HOST \nDB_USER=$DB_USER \nDB_PASS=$DB_PASS \nDB_PORT=$DB_PORT \nDB_NAME=$DB_NAME \nMONGODB_URI=$MONGODB_URI \nMONGODB_DB=$MONGODB_DB \nMONGODB_COLLECTION=$MONGODB_COLLECTION \nAPP_PORT=$APP_PORT \nVENDOR_QONTAK=$VENDOR_QONTAK \nMESSAGE_TEMPLATE=$MESSAGE_TEMPLATE \nCHANNEL_ID=$CHANNEL_ID \nTOKEN_QONTAK=$TOKEN_QONTAK \nTOTAL_DEVICE=$TOTAL_DEVICE \nNUMBER_FAKE=$NUMBER_FAKE \nOTP_FAKE=$OTP_FAKE \nJWT_SECRET=$JWT_SECRET" >> .env
+k8s_build:
+  stage: build
+  image: docker:20.10-dind
+  services:
+    - docker:20.10-dind
+  before_script:
+    - echo -e "DB_HOST=$DB_HOST \nDB_USER=$DB_USER \nDB_PASS=$DB_PASS \nDB_PORT=$DB_PORT \nDB_NAME=$DB_NAME \nMONGODB_URI=$MONGODB_URI \nMONGODB_DB=$MONGODB_DB \nMONGODB_COLLECTION=$MONGODB_COLLECTION \nAPP_PORT=$APP_PORT \nVENDOR_QONTAK=$VENDOR_QONTAK \nMESSAGE_TEMPLATE=$MESSAGE_TEMPLATE \nCHANNEL_ID=$CHANNEL_ID \nTOKEN_QONTAK=$TOKEN_QONTAK \nTOTAL_DEVICE=$TOTAL_DEVICE \nNUMBER_FAKE=$NUMBER_FAKE \nOTP_FAKE=$OTP_FAKE \nJWT_SECRET=$JWT_SECRET" >> .env
 
-#   script:
-#     - docker build -t $K8S_TAG_COMMIT -t $K8S_TAG_LATEST .
-#     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-#     - docker push $K8S_TAG_COMMIT
-#     - docker push $K8S_TAG_LATEST
-#   only:
-#     - dev 
-
-# deploy_k8s:
-#   stage: deploy
-#   image: dtzar/helm-kubectl
-#   script: |-
-#     kubectl config set-cluster k8s --server="$K8S_SERVER"
-#     kubectl config set clusters.k8s.certificate-authority-data "$K8S_CA_B64"
-#     kubectl config set-credentials gitlab --token="$K8S_TOKEN"
-#     kubectl config set-context default --cluster=k8s --user=gitlab
-#     kubectl config use-context default
-#     ls
-#     cd qgrowid-cluster && git checkout dev && git pull origin dev
-#     cd deployments && kubectl apply -f $K8S_YAML && cd ..
-#     cd services && kubectl apply -f $K8S_SERVICE_YAML && cd ..
-#     kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
-#   only:
-#     - dev
+  script:
+    - docker build -t $K8S_TAG_COMMIT -t $K8S_TAG_LATEST .
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker push $K8S_TAG_COMMIT
+    - docker push $K8S_TAG_LATEST
+  only:
+    - dev 
 
 deploy_k8s:
   stage: deploy
   image: dtzar/helm-kubectl
-  script:
-    - echo "$K8S_TOKEN" | base64 -d > kubeconfig.yaml
-    - export KUBECONFIG=$PWD/kubeconfig.yaml
   script: |-
+    kubectl config set-cluster k8s --server="$K8S_SERVER"
+    kubectl config set clusters.k8s.certificate-authority-data "$K8S_CA_B64"
+    kubectl config set-credentials gitlab --token="$K8S_TOKEN"
+    kubectl config set-context default --cluster=k8s --user=gitlab
     kubectl config use-context default
-    cd qgrowid-cluster && git checkout dev && git pull origin dev
-    cd deployments && kubectl apply -f $K8S_YAML && cd ..
-    cd services && kubectl apply -f $K8S_SERVICE_YAML && cd ..
-    kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE
+    cd ci && kubectl apply -f $K8S_YAML && cd ..
+    cd ci && kubectl apply -f $K8S_SERVICE_YAML && cd ..
+    kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
   only:
     - dev
