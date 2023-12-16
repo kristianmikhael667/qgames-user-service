@@ -49,6 +49,7 @@ variables:
 
 deploy_k8s:
   stage: deploy
+  image: dtzar/helm-kubectl
   script: |-
     kubectl config set-cluster k8s --server="$K8S_SERVER"
     kubectl config set clusters.k8s.certificate-authority-data "$K8S_CA_B64"
