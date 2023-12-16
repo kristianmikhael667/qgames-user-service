@@ -47,19 +47,32 @@ variables:
 #   only:
 #     - dev 
 
+# deploy_k8s:
+#   stage: deploy
+#   image: dtzar/helm-kubectl
+#   script: |-
+#     kubectl config set-cluster k8s --server="$K8S_SERVER"
+#     kubectl config set clusters.k8s.certificate-authority-data "$K8S_CA_B64"
+#     kubectl config set-credentials gitlab --token="$K8S_TOKEN"
+#     kubectl config set-context default --cluster=k8s --user=gitlab
+#     kubectl config use-context default
+#     ls
+#     cd qgrowid-cluster && git checkout dev && git pull origin dev
+#     cd deployments && kubectl apply -f $K8S_YAML && cd ..
+#     cd services && kubectl apply -f $K8S_SERVICE_YAML && cd ..
+#     kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
+#   only:
+#     - dev
+
 deploy_k8s:
   stage: deploy
-  image: dtzar/helm-kubectl
-  script: |-
-    kubectl config set-cluster k8s --server="$K8S_SERVER"
-    kubectl config set clusters.k8s.certificate-authority-data "$K8S_CA_B64"
-    kubectl config set-credentials gitlab --token="$K8S_TOKEN"
-    kubectl config set-context default --cluster=k8s --user=gitlab
-    kubectl config use-context default
-    ls
-    cd qgrowid-cluster && git checkout dev && git pull origin dev
-    cd deployments && kubectl apply -f $K8S_YAML && cd ..
-    cd services && kubectl apply -f $K8S_SERVICE_YAML && cd ..
-    kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
+  script:
+    - echo "$K8S_SERVER" | base64 -d > kubeconfig.yaml
+    - export KUBECONFIG=$PWD/kubeconfig.yaml
+    - kubectl config use-context default
+    - cd qgrowid-cluster && git checkout dev && git pull origin dev
+    - cd deployments && kubectl apply -f $K8S_YAML && cd ..
+    - cd services && kubectl apply -f $K8S_SERVICE_YAML && cd ..
+    - kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE
   only:
     - dev
