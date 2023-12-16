@@ -56,6 +56,7 @@ deploy_k8s:
     kubectl config set-credentials gitlab --token="$K8S_TOKEN"
     kubectl config set-context default --cluster=k8s --user=gitlab
     kubectl config use-context default
+    ls
     cd qgrowid-cluster && git checkout dev && git pull origin dev
     cd deployments && kubectl apply -f $K8S_YAML && cd ..
     cd services && kubectl apply -f $K8S_SERVICE_YAML && cd ..
