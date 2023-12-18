@@ -10,7 +10,7 @@ import (
 
 func (h *handler) Route(g *echo.Group) {
 	g.GET("/status", func(c echo.Context) error {
-		return c.JSON(200, map[string]string{"status": "User Service Oke FIXX"})
+		return c.JSON(200, map[string]string{"status": "Tuhan aku nih jodoh yang body slim itu rine atau devina ?"})
 	})
 	g.POST("/signup-users", h.RegisterUsers)
 	g.POST("/request-otp", h.RequestOtp)
