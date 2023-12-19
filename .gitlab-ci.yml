@@ -50,17 +50,18 @@ k8s_build:
 deploy_k8s:
   stage: deploy
   image: dtzar/helm-kubectl
-  script: |-
-    kubectl config set-cluster k8s --server="$K8S_SERVER"
-    kubectl config set clusters.k8s.certificate-authority-data "$K8S_CA_B64"
-    kubectl config set-credentials gitlab --token="$K8S_TOKEN"
-    kubectl config set-context default --cluster=k8s --user=gitlab
-    kubectl config use-context default
-    kubectl apply -f ci/deployment/"$K8S_YAML" --validate=false
-    kubectl apply -f ci/service/"$K8S_SERVICE_YAML"
-    kubectl rollout restart deployment "$K8S_DPL_NAME" -n $K8S_NAMESPACE"
+  script:
+    - kubectl config set-cluster k8s --server="$K8S_SERVER"
+    - kubectl config set clusters.k8s.certificate-authority-data "$K8S_CA_B64"
+    - kubectl config set-credentials gitlab --token="$K8S_TOKEN"
+    - kubectl config set-context gitlab --cluster=k8s --user=gitlab
+    - kubectl config use-context gitlab
+    - kubectl apply -f ci/deployment/"$K8S_YAML" --validate=false
+    - kubectl apply -f ci/service/"$K8S_SERVICE_YAML"
+    - kubectl rollout restart deployment "$K8S_DPL_NAME" -n "$K8S_NAMESPACE"
   only:
     - dev
+
 
 
     #  cd ci/deployment && kubectl apply -f "$K8S_YAML" && cd .. && cd ci/service && kubectl apply -f "$K8S_SERVICE_YAML" && cd ..
