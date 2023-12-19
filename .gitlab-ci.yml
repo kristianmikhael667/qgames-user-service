@@ -26,8 +26,8 @@ variables:
   DOCKER_NETWORK: qrowid-net
   K8S_TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME-k8s:latest
   K8S_TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME-k8s:$CI_COMMIT_SHORT_SHA
-  K8S_YAML: user-deploy.yaml
-  K8S_SERVICE_YAML: user-service.yaml
+  K8S_YAML: user-deploy.yml
+  K8S_SERVICE_YAML: user-service.yml
   K8S_DPL_NAME: qrowid-user-dpl
   K8S_NAMESPACE: qrowid-development
 
@@ -56,12 +56,8 @@ deploy_k8s:
     kubectl config set-credentials gitlab --token="$K8S_TOKEN"
     kubectl config set-context default --cluster=k8s --user=gitlab
     kubectl config use-context default
-    cd ci/deployment
-    kubectl apply -f "$K8S_YAML"
-    cd ..
-    cd ci/service
-    kubectl apply -f "$K8S_SERVICE_YAML"
-    cd ..
+    kubectl apply -f ci/deployment/"$K8S_YAML"
+    kubectl apply -f ci/service/"$K8S_SERVICE_YAML"
     kubectl rollout restart deployment "$K8S_DPL_NAME" -n $K8S_NAMESPACE"
   only:
     - dev
