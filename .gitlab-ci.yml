@@ -56,7 +56,7 @@ deploy_k8s:
     kubectl config set-credentials gitlab --token="$K8S_TOKEN"
     kubectl config set-context default --cluster=k8s --user=gitlab
     kubectl config use-context default
-    cd ci/deployment && kubectl apply -f $K8S_YAML --validate=false && cd .. && cd ci/service && kubectl apply -f $K8S_SERVICE_YAML && cd ..
+    cd ci/deployment && kubectl apply -f $K8S_YAML && cd .. && cd ci/service && kubectl apply -f $K8S_SERVICE_YAML && cd ..
     kubectl rollout restart deployment $K8S_DPL_NAME -n $K8S_NAMESPACE"
   only:
     - dev
