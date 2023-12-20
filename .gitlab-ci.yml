@@ -27,23 +27,23 @@ k8s_build:
   services:
     - docker:20.10-dind
   before_script:
-    - echo -e "DB_HOST=$DB_HOST_DEV \n
-      DB_USER=$DB_USER \n
-      DB_PASS=$DB_PASS_DEV \n
-      DB_PORT=$DB_PORT \n
-      DB_NAME=$DB_NAME \n
-      MONGODB_URI=$MONGODB_URI_DEV \n
-      MONGODB_DB=$MONGODB_DB \n
-      MONGODB_COLLECTION=$MONGODB_COLLECTION \n
-      APP_PORT=$APP_PORT \n
-      VENDOR_QONTAK=$VENDOR_QONTAK \n
-      MESSAGE_TEMPLATE=$MESSAGE_TEMPLATE \n
-      CHANNEL_ID=$CHANNEL_ID \n
-      TOKEN_QONTAK=$TOKEN_QONTAK \n
-      TOTAL_DEVICE=$TOTAL_DEVICE \n
-      NUMBER_FAKE=$NUMBER_FAKE \n
-      OTP_FAKE=$OTP_FAKE \n
-      JWT_SECRET=$JWT_SECRET_DEV" >> .env
+    - echo "DB_HOST=$DB_HOST_DEV" >> .env
+    - echo "DB_USER=$DB_USER" >> .env
+    - echo "DB_PASS=$DB_PASS_DEV" >> .env
+    - echo "DB_PORT=$DB_PORT" >> .env
+    - echo "DB_NAME=$DB_NAME" >> .env
+    - echo "MONGODB_URI=$MONGODB_URI_DEV" >> .env
+    - echo "MONGODB_DB=$MONGODB_DB" >> .env
+    - echo "MONGODB_COLLECTION=$MONGODB_COLLECTION" >> .env
+    - echo "APP_PORT=$APP_PORT" >> .env
+    - echo "VENDOR_QONTAK=$VENDOR_QONTAK" >> .env
+    - echo "MESSAGE_TEMPLATE=$MESSAGE_TEMPLATE" >> .env
+    - echo "CHANNEL_ID=$CHANNEL_ID" >> .env
+    - echo "TOKEN_QONTAK=$TOKEN_QONTAK" >> .env
+    - echo "TOTAL_DEVICE=$TOTAL_DEVICE" >> .env
+    - echo "NUMBER_FAKE=$NUMBER_FAKE" >> .env
+    - echo "OTP_FAKE=$OTP_FAKE" >> .env
+    - echo "JWT_SECRET=$JWT_SECRET_DEV" >> .env
 
   script:
     - docker build -t $K8S_TAG_COMMIT -t $K8S_TAG_LATEST .
