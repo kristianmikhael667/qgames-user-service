@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 func SendOtp(phone string, otp string) (string, int) {
@@ -64,6 +66,6 @@ func SendOtp(phone string, otp string) (string, int) {
 
 	// Process response
 	fmt.Println("Response status:", res.Status)
-	Logger("info", "Success Send OTP to number: "+phone, "Rc: "+res.Status)
+	log.Print("Success Send OTP to number: "+phone, res.Status)
 	return res.Status, res.StatusCode
 }

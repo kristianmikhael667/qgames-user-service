@@ -2,13 +2,12 @@ package repository
 
 import (
 	"context"
-	"fmt"
-	"main/helper"
 	"main/internal/dto"
 	model "main/internal/model"
 	"main/internal/pkg/util"
 
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -54,9 +53,8 @@ func (r *assigns) GetAssignUsers(ctx context.Context, uidusers string) ([]model.
 	var assign []model.Assign
 
 	if err := r.Db.WithContext(ctx).Where("users = ? ", uidusers).Find(&assign).Error; err != nil {
-		helper.Logger("error", "Assign Not Found", "Rc: "+string(rune(404)))
+		log.Print("Assign Not Found", 404)
 	}
-	fmt.Println("dalamannya > ", assign)
 	return assign, nil
 }
 
@@ -66,7 +64,7 @@ func (r *assigns) EditRolesTopup(c echo.Context, ctx context.Context, payload *d
 	tokens, _ := util.ParseJWTToken(authHeader)
 
 	if err := r.Db.WithContext(ctx).Where("users = ? ", tokens.Uuid).Find(&assign).Error; err != nil {
-		helper.Logger("error", "Assign Users Not Found", "Rc: "+string(rune(404)))
+		log.Print("Assign User Not Found", 404)
 		return false, err
 	}
 

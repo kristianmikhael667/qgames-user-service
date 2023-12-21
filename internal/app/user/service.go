@@ -3,15 +3,15 @@ package user
 import (
 	"context"
 	"fmt"
-	"main/helper"
-	"main/package/constant"
-
 	dto "main/internal/dto"
 	"main/internal/factory"
 	"main/internal/pkg/util"
 	repository "main/internal/repository"
+	"main/package/constant"
 	pkgdto "main/package/dto"
 	res "main/package/util/response"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/labstack/echo/v4"
 )
@@ -113,7 +113,7 @@ func (s *service) UpdateUsers(ctx context.Context, payload *dto.UpdateUsersReqBo
 	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, data.UidUser.String())
 
 	if err != nil {
-		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+		log.Print("Error get assign user service ", 403)
 	}
 	firstRole := response_assign[0].Roles
 
@@ -206,21 +206,21 @@ func (s *service) Logout(c echo.Context, ctx context.Context, uiduser string) (s
 	// 1. Check Account
 	users, sc, msg, err := s.UserRepository.MyAccount(ctx, uiduser)
 	if err != nil {
-		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
+		log.Print("Error "+msg, sc)
 		return msg, sc, err
 	}
 
 	// 2. Delete Session
 	msg, sc, err = s.SessionRepository.LogoutSession(c, ctx, users)
 	if err != nil {
-		helper.Logger("error", msg, "Rc: "+string(rune(sc)))
+		log.Print("Error "+msg, sc)
 		return msg, sc, err
 	}
 
 	// 3. delete fcm
 	msgfcm, scfcm, err := s.FcmTokenRepository.LogoutFCMTokenUser(c, ctx, users.UidUser.String())
 	if err != nil {
-		helper.Logger("error", msgfcm, "Rc: "+string(rune(sc)))
+		log.Print("Error "+msgfcm, sc)
 		return msgfcm, scfcm, err
 	}
 

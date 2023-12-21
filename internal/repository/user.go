@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -135,10 +136,9 @@ func (r *user) CreateUsers(ctx context.Context, phone string) (model.User, bool,
 		}
 
 		if err := r.Db.WithContext(ctx).Save(&newUsers).Error; err != nil {
-			fmt.Println("error apa ini ", err.Error())
-			helper.Logger("error", "Failed Create User With Number : "+phone, "400")
+			log.Print("Failed Create User With Number : "+phone, 400)
 		} else {
-			helper.Logger("info", "Success Create User With Number: "+phone, "Rc: "+string(rune(201)))
+			log.Print("Success Create User With Number: "+phone, 201)
 			return newUsers, true, 205, "New User Successfully Created, Please Register", nil
 		}
 	}
@@ -192,7 +192,7 @@ func (r *user) VerifyOtp(ctx context.Context, phone string, otps string) (model.
 	minutesPassed := int(diff.Seconds())
 
 	if minutesPassed <= expiredminute {
-		helper.Logger("error", "Expired Otp : "+string(rune(403)), "Rc: "+string(rune(403)))
+		log.Print("Expired OTP ", 403)
 		return users, false, "Expired Otp", nil
 	}
 
@@ -249,7 +249,7 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 
 	// Validate Phone Number
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&user).Error; err != nil {
-		helper.Logger("error", "Number Phone Not Found Users", "Rc: "+string(rune(404)))
+		log.Print("Number Phone Not Found Users ", 404)
 		return user, 404, "Number Phone Not Found Users", err
 	}
 
@@ -269,7 +269,7 @@ func (r *user) LoginByPin(ctx context.Context, loginpin *dto.LoginByPin) (model.
 	}
 
 	if (!helper.VerifyPin(loginpin.Pin, user.Pin)) && (trylimit.PinAttempt < 3) {
-		helper.Logger("error", "Wrong PIN", "Rc: "+string(rune(403)))
+		log.Print("Wrong PIN ", 403)
 		trylimit.PinAttempt = trylimit.PinAttempt + 1
 		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
 			return user, 500, "Failed update trylimit", err
@@ -296,7 +296,7 @@ func (r *user) CheckPin(ctx context.Context, phone string, loginpin string) (boo
 
 	// Validate Phone Number
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).First(&user).Error; err != nil {
-		helper.Logger("error", "Number Phone Not Found Users", "Rc: "+string(rune(404)))
+		log.Print("Number Phone Not Found Users ", 404)
 		return false, 404, err
 	}
 
@@ -316,7 +316,7 @@ func (r *user) CheckPin(ctx context.Context, phone string, loginpin string) (boo
 	}
 
 	if (!helper.VerifyPin(loginpin, user.Pin)) && (trylimit.PinAttempt < 3) {
-		helper.Logger("error", "Wrong PIN", "Rc: "+string(rune(403)))
+		log.Print("Wrong PIN ", 403)
 		trylimit.PinAttempt = trylimit.PinAttempt + 1
 		if err := r.Db.WithContext(ctx).Save(&trylimit).Error; err != nil {
 			return false, 500, err
@@ -324,7 +324,7 @@ func (r *user) CheckPin(ctx context.Context, phone string, loginpin string) (boo
 		return false, 401, nil
 
 	} else if trylimit.PinAttempt == 3 {
-		helper.Logger("error", "Pin 3 times", "Rc: "+string(rune(403)))
+		log.Print("Error PIN 3 Times", 403)
 		return false, 403, nil
 	}
 	trylimit.PinAttempt = 0
@@ -339,10 +339,10 @@ func (r *user) LoginAdmin(ctx context.Context, loginadmin *dto.LoginAdmin) (mode
 	var user model.User
 	// Check email
 	if err := r.Db.WithContext(ctx).Where("email = ?", loginadmin.Email).First(&user).Error; err != nil {
-		helper.Logger("error", "Email Not Found", "Rc: "+string(rune(404)))
+		log.Print("Email Not Found", 404)
 		return user, 404, "Email not found", err
 	} else if !helper.VerifyPassword(loginadmin.Password, user.Password) {
-		helper.Logger("error", "Password is wrong", "Rc: "+string(rune(404)))
+		log.Print("Password is wrong", 404)
 		return user, 404, "Password not found", err
 	} else {
 		return user, 201, "Success Login Admin", nil
@@ -356,7 +356,7 @@ func (r *user) GetUserByNumber(ctx context.Context, phone string) (model.User, i
 	// phones = strings.Replace(phones, "62", "0", -1)
 
 	if err := r.Db.WithContext(ctx).Where("phone = ? ", phones).Find(&user).Error; err != nil {
-		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))
+		log.Print("User not found", 404)
 		return user, 404, "User Not Found", err
 	}
 	return user, 200, "Get User " + user.Fullname, nil
@@ -366,7 +366,7 @@ func (r *user) MyAccount(ctx context.Context, iduser string) (model.User, int, s
 	var user model.User
 
 	if err := r.Db.WithContext(ctx).Where("uid_user = ? ", iduser).Find(&user).Error; err != nil {
-		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))
+		log.Print("User Not Found", 404)
 		return user, 404, "User Not Found", nil
 
 	}
@@ -376,7 +376,7 @@ func (r *user) MyAccount(ctx context.Context, iduser string) (model.User, int, s
 func (r *user) ResetPin(ctx context.Context, uid_user string, payload *dto.ConfirmPin) (model.User, int, string, error) {
 	var users model.User
 	if err := r.Db.WithContext(ctx).Where("uid_user = ? ", uid_user).First(&users).Error; err != nil {
-		helper.Logger("error", "User Not Found", "Rc: "+string(rune(404)))
+		log.Print("User Not Found", 404)
 		return users, 404, "User Not Found", nil
 	}
 

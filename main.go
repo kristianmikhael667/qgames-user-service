@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+
 	"main/database"
 	"main/database/migration"
 	"main/database/seeder"
@@ -13,6 +13,9 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func init() {
@@ -24,6 +27,18 @@ func init() {
 }
 
 func main() {
+	// logger
+	lumberJack := lumberjack.Logger{
+		Filename:   "logs/lumberjack.log",
+		MaxSize:    1,
+		MaxBackups: 3,
+		MaxAge:     28,
+		Compress:   true,
+	}
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	multi := zerolog.MultiLevelWriter(os.Stdout, &lumberJack)
+	log.Logger = zerolog.New(multi).With().Timestamp().Logger()
+
 	database.CreateConnection()
 
 	var migrate string
@@ -58,7 +73,7 @@ to use this flag:
 	} else if migrate == "status" {
 		migration.Status()
 	} else {
-		log.Println("No Key Migrate")
+		log.Print("No Key Migrate")
 	}
 
 	if seed == "all" {

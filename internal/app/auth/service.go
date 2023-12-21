@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
 
 type service struct {
@@ -163,7 +164,7 @@ func (s *service) VerifyOtp(c echo.Context, ctx context.Context, validotp *dto.R
 	if validotp.Phone == utils.Getenv("NUMBER_FAKE", "000") {
 		datausers, sc, _, msg, err := s.UserRepository.CheckUser(ctx, false, utils.Getenv("NUMBER_FAKE", "000"))
 		if err != nil {
-			helper.Logger("error", msg+" User Tester", "Rc: "+string(rune(403)))
+			log.Print("Error "+msg+" User tester ", 403)
 			return result, msg, sc, err
 		}
 
@@ -171,7 +172,7 @@ func (s *service) VerifyOtp(c echo.Context, ctx context.Context, validotp *dto.R
 		response_assign, err := s.AssignRepository.GetAssignUsers(ctx, datausers.UidUser.String())
 
 		if err != nil {
-			helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+			log.Print("Error get assign user service ", 403)
 		}
 
 		helpers, sc, msg, err := helper.AuditOTPPlayStore(datausers, response_assign, result, validotp)
@@ -184,11 +185,11 @@ func (s *service) VerifyOtp(c echo.Context, ctx context.Context, validotp *dto.R
 	// Check OTP
 	_, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, validotp.Phone, validotp.Otp)
 	if err != nil {
-		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		log.Print("Error "+msg, 403)
 		return result, msg, 403, err
 	}
 	if verifyOtp == false {
-		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		log.Print("Error "+msg, 403)
 		return result, msg, 401, err
 	}
 
@@ -207,7 +208,7 @@ func (s *service) VerifyOtp(c echo.Context, ctx context.Context, validotp *dto.R
 	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, response.UidUser.String())
 
 	if err != nil {
-		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+		log.Print("Error get assign user service ", 403)
 	}
 
 	firstRole := response_assign[0].Roles
@@ -289,7 +290,7 @@ func (s *service) LoginPin(c echo.Context, ctx context.Context, loginpin *dto.Lo
 	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, responses.UidUser.String())
 
 	if err != nil {
-		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+		log.Print("Error get assign user service", 403)
 	}
 
 	firstRole := response_assign[0].Roles
@@ -386,7 +387,7 @@ func (s *service) ConfirmReset(c echo.Context, ctx context.Context, phone *dto.C
 	if phone.Phone == utils.Getenv("NUMBER_FAKE", "000") {
 		_, sc, _, msg, err := s.UserRepository.CheckUser(ctx, false, utils.Getenv("NUMBER_FAKE", "000"))
 		if err != nil {
-			helper.Logger("error", msg+" User Tester", "Rc: "+string(rune(403)))
+			log.Print("Error User Tester", 403)
 			return msg, int(sc), err
 		}
 
@@ -433,14 +434,14 @@ func (s *service) ResetDevice(c echo.Context, ctx context.Context, session *dto.
 	if session.Phone == utils.Getenv("NUMBER_FAKE", "000") {
 		datausers, sc, _, msg, err := s.UserRepository.CheckUser(ctx, false, utils.Getenv("NUMBER_FAKE", "000"))
 		if err != nil {
-			helper.Logger("error", msg+" User Tester", "Rc: "+string(rune(403)))
+			log.Print("Error User Tester", 403)
 			return result, msg, int(sc), err
 		}
 
 		// Get all assign and loop
 		response_assign, err := s.AssignRepository.GetAssignUsers(ctx, datausers.UidUser.String())
 		if err != nil {
-			helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+			log.Print("Error get assign user service", 403)
 		}
 
 		// Step 1. Check Verify OTP
@@ -452,7 +453,7 @@ func (s *service) ResetDevice(c echo.Context, ctx context.Context, session *dto.
 		// Step 2. Update Device ID
 		msg, scs, err := s.SessionRepository.UpdateSession(c, ctx, datausers, session)
 		if err != nil {
-			helper.Logger("error", msg, "Rc: "+string(rune(403)))
+			log.Print("Error "+msg, 403)
 			return result, msg, scs, err
 		}
 		return result, msg, scs, nil
@@ -461,18 +462,18 @@ func (s *service) ResetDevice(c echo.Context, ctx context.Context, session *dto.
 	// Step 1. Check Verify OTP
 	_, verifyOtp, msg, err := s.UserRepository.VerifyOtp(ctx, session.Phone, session.Otp)
 	if err != nil {
-		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		log.Print("Error "+msg, 403)
 		return result, msg, 403, err
 	}
 	if verifyOtp == false {
-		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		log.Print("Error "+msg, 403)
 		return result, msg, 403, err
 	}
 
 	// Get User
 	responses, sc, msgUsr, err := s.UserRepository.GetUserByNumber(ctx, session.Phone)
 	if err != nil {
-		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		log.Print("Error "+msg, 403)
 		return result, msgUsr, sc, err
 	}
 
@@ -480,7 +481,7 @@ func (s *service) ResetDevice(c echo.Context, ctx context.Context, session *dto.
 	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, responses.UidUser.String())
 
 	if err != nil {
-		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+		log.Print("Error get assign user service ", 403)
 	}
 	firstRole := response_assign[0].Roles
 
@@ -505,7 +506,7 @@ func (s *service) ResetDevice(c echo.Context, ctx context.Context, session *dto.
 	// Step 2. Update Device ID
 	msgSess, scSess, err := s.SessionRepository.UpdateSession(c, ctx, responses, session)
 	if err != nil {
-		helper.Logger("error", msg, "Rc: "+string(rune(403)))
+		log.Print("Error "+msg, 403)
 		return result, msgSess, scSess, err
 	}
 
@@ -538,7 +539,7 @@ func (s *service) RefreshToken(ctx context.Context, oldtoken *dto.JWTClaims) (*d
 	response_assign, err := s.AssignRepository.GetAssignUsers(ctx, users.UidUser.String())
 
 	if err != nil {
-		helper.Logger("error", "Error get assign user service", "Rc: "+string(rune(403)))
+		log.Print("Error get assign user service "+msg, 403)
 	}
 
 	firstRole := response_assign[0].Roles
