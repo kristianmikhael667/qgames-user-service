@@ -6,6 +6,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+RUN mkdir logs
 RUN go build -o /qgames-user-service
 
 # step 2: build a small image
