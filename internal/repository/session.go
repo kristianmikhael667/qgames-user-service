@@ -377,7 +377,7 @@ func (r *session) CheckSessionPin(c echo.Context, ctx context.Context, uid_users
 	fmt.Println("Ss ", positionApps == positionDevice)
 	fmt.Println("LOOP  ", len(application))
 
-	if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil && len(application) == 2 && positionDevice == 0 {
+	if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil && len(application) == 2 && len(devices) == 1 {
 		// case jika dua apps berbeda menggunakan satu device
 		fmt.Println("msk satu device")
 		return msg, status, nil
