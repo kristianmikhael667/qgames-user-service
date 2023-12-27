@@ -351,34 +351,47 @@ func (r *session) CheckSessionPin(c echo.Context, ctx context.Context, uid_users
 
 	// Check all device id
 	devices := strings.Split(sessions.DeviceId, ",")
-	// var positionDevice int
-	for _, d := range devices {
+	var positionDevice int
+	for i, d := range devices {
 		if d == device_id {
 			isDevice = true
-			// positionDevice = i
+			positionDevice = i
 			break
 		}
 	}
 
 	// Check name application
 	application := strings.Split(sessions.Application, ",")
-	// var positionApps int
-	for _, d := range application {
+	var positionApps int
+	for i, d := range application {
 		if d == apps {
 			isApps = true
-			// positionApps = i
+			positionApps = i
 			break
 		}
 	}
+	fmt.Println("isDevice && isApps ", isDevice, " ", isApps)
+	fmt.Println("positionDevice ", positionDevice)
+	fmt.Println("positionApps ", positionApps)
+	fmt.Println("status ", sessions.Status)
+	fmt.Println("Ss ", positionApps == positionDevice)
+	fmt.Println("LOOP  ", len(application))
 
-	if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil {
-		// User sudah ada device id yang sama ketika login
+	if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil && len(application) == 2 && positionDevice == 0 {
+		// case jika dua apps berbeda menggunakan satu device
+		fmt.Println("msk satu device")
 		return msg, status, nil
-	} else if isDevice == false {
-		// default
-		return "Not Found Device ID", 403, nil
 	} else {
-		return "Not Found Application", 403, nil
+		if isDevice && isApps && positionApps == positionDevice && sessions.Status == true && sessions.LoggedOutAt == nil {
+			// Device A = apps A
+			// Device B = apps B
+			fmt.Println("msk beda device")
+			return msg, status, nil
+		} else if isDevice == false || isApps == false {
+			return "Not Found Device ID or Application", 403, nil
+		} else {
+			return "Not detected", 403, nil
+		}
 	}
 }
 
