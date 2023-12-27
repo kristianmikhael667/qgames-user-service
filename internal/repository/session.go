@@ -351,27 +351,27 @@ func (r *session) CheckSessionPin(c echo.Context, ctx context.Context, uid_users
 
 	// Check all device id
 	devices := strings.Split(sessions.DeviceId, ",")
-	var positionDevice int
-	for i, d := range devices {
+	// var positionDevice int
+	for _, d := range devices {
 		if d == device_id {
 			isDevice = true
-			positionDevice = i
+			// positionDevice = i
 			break
 		}
 	}
 
 	// Check name application
 	application := strings.Split(sessions.Application, ",")
-	var positionApps int
-	for i, d := range application {
+	// var positionApps int
+	for _, d := range application {
 		if d == apps {
 			isApps = true
-			positionApps = i
+			// positionApps = i
 			break
 		}
 	}
 
-	if isDevice && isApps && positionDevice == positionApps && sessions.Status == true && sessions.LoggedOutAt == nil {
+	if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil {
 		// User sudah ada device id yang sama ketika login
 		return msg, status, nil
 	} else if isDevice == false {
