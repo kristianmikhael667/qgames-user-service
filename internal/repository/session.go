@@ -155,7 +155,8 @@ func (r *session) UpdateSession(c echo.Context, ctx context.Context, users model
 			break
 		}
 	}
-	if qgamesIndex != -1 && len(sessions.DeviceId) > 1 {
+
+	if qgamesIndex != -1 && len(deviceIDs) > 1 {
 		// Update nilai "device_id" yang sesuai dengan name application
 		deviceIDs[qgamesIndex] = device_id
 		// Gabungkan kembali array "device_id" menjadi string
