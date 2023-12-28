@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"main/helper"
 	dto "main/internal/dto"
 	model "main/internal/model"
@@ -156,14 +155,18 @@ func (r *session) UpdateSession(c echo.Context, ctx context.Context, users model
 			break
 		}
 	}
-
-	if qgamesIndex != -1 {
+	if qgamesIndex != -1 && len(sessions.DeviceId) > 1 {
 		// Update nilai "device_id" yang sesuai dengan name application
 		deviceIDs[qgamesIndex] = device_id
 		// Gabungkan kembali array "device_id" menjadi string
 		updatedDeviceID := strings.Join(deviceIDs, ",")
 		// Update nilai "device_id" kembali ke database
 		sessions.DeviceId = updatedDeviceID
+		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
+			return "Failed Update Session", 500, err
+		}
+	} else {
+		sessions.DeviceId = device_id
 		if err := r.Db.WithContext(ctx).Save(&sessions).Error; err != nil {
 			return "Failed Update Session", 500, err
 		}
@@ -219,7 +222,6 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 	}
 
 	if isApps && len(deviceIDs) == intValue && len(applications) == intValue {
-		fmt.Println("msk 1")
 		deviceIDs[qgamesIndex] = ""
 		applications[qgamesIndex] = ""
 		updatedDeviceID := strings.Join(deviceIDs, "")
@@ -231,7 +233,6 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 			return "Failed Update Session", 500, err
 		}
 	} else if isApps && len(deviceIDs) == 1 && len(applications) == intValue {
-		fmt.Println("msk 2")
 		applications[qgamesIndex] = ""
 		deviceIDs[qgamesIndex] = ""
 		updatedAppsID := strings.Join(applications, "")
@@ -241,7 +242,6 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 			return "Failed Update Session", 500, err
 		}
 	} else if isApps && len(deviceIDs) == 1 && len(applications) == 1 {
-		fmt.Println("msk 3")
 		applications[qgamesIndex] = ""
 		deviceIDs[qgamesIndex] = ""
 		updatedDeviceID := strings.Join(deviceIDs, "")
@@ -257,10 +257,6 @@ func (r *session) LogoutSession(c echo.Context, ctx context.Context, user model.
 		}
 	} else if isApps && len(deviceIDs) == intValue && len(applications) == 1 {
 		// Jika mempunyai 2 device dalam 1 apps
-		fmt.Println("msk 4 ? ", deviceId)
-		fmt.Println("CEKK ", deviceIDs)
-		fmt.Println("KIDAL ", intValue)
-		fmt.Println("asss ", deviceIndex)
 		deviceIDs[deviceIndex] = ""
 		updatedDeviceID := strings.Join(deviceIDs, "")
 		sessions.DeviceId = updatedDeviceID
@@ -370,22 +366,14 @@ func (r *session) CheckSessionPin(c echo.Context, ctx context.Context, uid_users
 			break
 		}
 	}
-	fmt.Println("isDevice && isApps ", isDevice, " ", isApps)
-	fmt.Println("positionDevice ", positionDevice)
-	fmt.Println("positionApps ", positionApps)
-	fmt.Println("status ", sessions.Status)
-	fmt.Println("Ss ", positionApps == positionDevice)
-	fmt.Println("LOOP  ", len(application))
 
 	if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil && len(application) == 2 && len(devices) == 1 {
 		// case jika dua apps berbeda menggunakan satu device
-		fmt.Println("msk satu device")
 		return msg, status, nil
 	} else {
 		if isDevice && isApps && positionApps == positionDevice && sessions.Status == true && sessions.LoggedOutAt == nil {
 			// Device A = apps A
 			// Device B = apps B
-			fmt.Println("msk beda device")
 			return msg, status, nil
 		} else if isDevice == false || isApps == false {
 			return "Not Found Device ID or Application", 403, nil
