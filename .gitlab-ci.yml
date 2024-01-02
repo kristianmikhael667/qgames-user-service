@@ -26,8 +26,8 @@ k8s_build:
   services:
     - docker:20.10-dind
   before_script:
-    - echo -e "DB_HOST=$DB_HOST_DEV \n
-      DB_USER=$DB_USER \n
+    - echo -e "DB_HOST=10.244.219.2 \n
+      DB_USER=qgrowid \n
       DB_PASS=$DB_PASS_DEV \n
       DB_PORT=$DB_PORT \n
       DB_NAME=$DB_NAME \n
