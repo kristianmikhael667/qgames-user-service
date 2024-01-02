@@ -26,7 +26,7 @@ k8s_build:
   services:
     - docker:20.10-dind
   before_script:
-    - echo -e "DB_HOST=10.244.219.2 \n
+    - echo -e "DB_HOST=mysql-deployment-d57f6fb68-qpglp \n
       DB_USER=qgrowid \n
       DB_PASS=$DB_PASS_DEV \n
       DB_PORT=$DB_PORT \n
