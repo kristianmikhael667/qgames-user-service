@@ -2,6 +2,7 @@ package http
 
 import (
 	"main/internal/app/assign"
+	"main/internal/app/attempt"
 	"main/internal/app/auth"
 	"main/internal/app/permission"
 	"main/internal/app/role"
@@ -25,6 +26,7 @@ func NewHttp(e *echo.Echo, f *factory.Factory) {
 	user.NewHandler(f).Route(v1.Group("user-service"))
 	permission.NewHandler(f).Route(v1.Group("user-service"))
 	assign.NewHandler(f).Route(v1.Group("user-service"))
+	attempt.NewHandler(f).Route(v1.Group("user-service"))
 
 	// v2 := e.Group("/product-service")
 
