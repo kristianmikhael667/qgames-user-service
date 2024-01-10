@@ -39,15 +39,15 @@ func SendOtp(phone string, otp string) (string, int) {
 	// Convert payload to JSON
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Print("Error payloadBytes : ", err.Error())
-		return err.Error(), 500
+		log.Print("Error payloadBytes : ", err)
+		return "Error payloadBytes", 500
 	}
 
 	// Create HTTP request
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		log.Print("Error HTTP Create request : ", err.Error())
-		return err.Error(), 500
+		log.Print("Error HTTP Create request : ", err)
+		return "Error HTTP Create request", 500
 	}
 
 	// Set request headers
@@ -58,8 +58,8 @@ func SendOtp(phone string, otp string) (string, int) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Print("Error Send HTTP request : ", err.Error(), " sc ? ", res.StatusCode)
-		return err.Error(), res.StatusCode
+		log.Print("Error Send HTTP request : ", err, " sc ? ", res.StatusCode)
+		return "Error Send HTTP request", res.StatusCode
 	}
 	defer res.Body.Close()
 
