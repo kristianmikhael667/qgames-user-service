@@ -57,11 +57,17 @@ func SendOtp(phone string, otp string) (string, int) {
 	// Send HTTP request
 	client := &http.Client{}
 	res, err := client.Do(req)
-	if err != nil {
-		log.Print("Error Send HTTP request : ", err, " sc ? ", res.StatusCode)
-		return "Error Send HTTP request", res.StatusCode
+	defer func() {
+		if res != nil && res.Body != nil {
+			res.Body.Close()
+		}
+	}()
+
+	// Check if response is nil
+	if res == nil {
+		log.Print("Error: Nil response")
+		return "Error: Nil response", 500
 	}
-	defer res.Body.Close()
 
 	// Process response
 	log.Print("Response status:", res.Status)
