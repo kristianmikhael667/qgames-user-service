@@ -3,7 +3,6 @@ package helper
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -40,14 +39,14 @@ func SendOtp(phone string, otp string) (string, int) {
 	// Convert payload to JSON
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Print("Error payloadBytes : ", err.Error())
 		return err.Error(), 500
 	}
 
 	// Create HTTP request
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Print("Error HTTP Create request : ", err.Error())
 		return err.Error(), 500
 	}
 
@@ -59,13 +58,13 @@ func SendOtp(phone string, otp string) (string, int) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Print("Error Send HTTP request : ", err.Error(), " sc ? ", res.StatusCode)
 		return err.Error(), res.StatusCode
 	}
 	defer res.Body.Close()
 
 	// Process response
-	fmt.Println("Response status:", res.Status)
+	log.Print("Response status:", res.Status)
 	log.Print("Success Send OTP to number: "+phone, res.Status)
 	return res.Status, res.StatusCode
 }
