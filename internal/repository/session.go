@@ -312,8 +312,10 @@ func (r *session) CheckSession(c echo.Context, ctx context.Context, uid_users st
 	}
 
 	if isDevice && isApps && positionDevice == positionApps && sessions.Status == true && sessions.LoggedOutAt == nil && sessions.TotalDevice <= int16Value {
-		// Device ID harus sesuai dengan application
-		// User sudah ada device id yang sama ketika login
+		// If device A = Apps A && device B = Apps B
+		return msg, status, otp, nil
+	} else if isDevice && isApps && sessions.Status == true && sessions.LoggedOutAt == nil && len(application) == 2 && len(devices) == 1 {
+		// If device A == Apps A && Apps B
 		return msg, status, otp, nil
 	} else if sessions.TotalDevice >= int16Value {
 		// User sudah melebihi 2 account akan kena limit dan already device
