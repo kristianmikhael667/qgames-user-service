@@ -3,6 +3,7 @@ package helper
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -39,15 +40,15 @@ func SendOtp(phone string, otp string) (string, int) {
 	// Convert payload to JSON
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Print("Error payloadBytes : ", err)
-		return "Error payloadBytes", 500
+		fmt.Println("Convert payload to JSON ", err)
+		return "Convert payload to JSON", 500
 	}
 
 	// Create HTTP request
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		log.Print("Error HTTP Create request : ", err)
-		return "Error HTTP Create request", 500
+		log.Print("Error Create HTTP request ", err)
+		return "Error Create HTTP request", 500
 	}
 
 	// Set request headers
@@ -57,20 +58,13 @@ func SendOtp(phone string, otp string) (string, int) {
 	// Send HTTP request
 	client := &http.Client{}
 	res, err := client.Do(req)
-	defer func() {
-		if res != nil && res.Body != nil {
-			res.Body.Close()
-		}
-	}()
-
-	// Check if response is nil
-	if res == nil {
-		log.Print("Error: Nil response")
-		return "Error: Nil response", 500
+	if err != nil {
+		log.Print("Error Send HTTP request ", err)
+		return "Error Send HTTP request", res.StatusCode
 	}
+	defer res.Body.Close()
 
 	// Process response
-	log.Print("Response status:", res.Status)
-	log.Print("Success Send OTP to number: "+phone, res.Status)
+	log.Print("info", "Success Send OTP to number: "+phone, "Rc: "+res.Status)
 	return res.Status, res.StatusCode
 }
