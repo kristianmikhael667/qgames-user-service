@@ -78,4 +78,8 @@ type (
 		NewPin     string `json:"new_pin" validate:"required"`
 		ConfirmPin string `json:"confirm_pin" validate:"required"`
 	}
+
+	RequestReset struct {
+		Phone string `json:"phone" validate:"required"`
+	}
 )

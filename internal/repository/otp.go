@@ -8,6 +8,7 @@ import (
 	"main/package/util/response"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -34,7 +35,8 @@ func (r *otp) SendOtp(ctx context.Context, phone string, sc int, otp string, try
 
 	if sc == 201 {
 		// Sementara karena blm ada otp dari vendor maka kita buat send ke logs dlu
-		helper.Logger("info", "Success Send Otp with Number: "+phone+" Your OTP : "+otp, "Rc: "+string(rune(201)))
+		log.Print("Success Send Otp with Number: "+phone+" Your OTP : "+otp, 201)
+
 		newOtp := model.Otp{
 			Phone:     phone,
 			Otp:       hashedOtp,
@@ -49,7 +51,7 @@ func (r *otp) SendOtp(ctx context.Context, phone string, sc int, otp string, try
 		lastTest := trylimit.LastAttempt.Format("2006-01-02")
 
 		if (trylimit.OtpAttempt >= 3) && (curr == lastTest) {
-			helper.Logger("error", "Otp already 3 times  : "+string(rune(400)), "Rc: "+string(rune(400)))
+			log.Print("Otp already 3 times", 400)
 			return "Otp already 3 times", 400, response.CustomErrorBuilder(400, "Error", "Otp already 3 times")
 		} else if curr != lastTest {
 			trylimit.OtpAttempt = 0
@@ -63,10 +65,10 @@ func (r *otp) SendOtp(ctx context.Context, phone string, sc int, otp string, try
 		}
 		msg_otp, sc_otp := helper.SendOtp(phone, otp)
 		if sc_otp != 200 && sc_otp != 201 {
-			helper.Logger("error", msg_otp, "400")
+			log.Print("Error "+msg_otp, 400)
 			return msg_otp, sc_otp, nil
 		}
-		helper.Logger("info", msg_otp+" unclomplate otp", "Rc: "+string(rune(201)))
+		log.Print("Error "+msg_otp+" unclomplate otp", 201)
 	}
 	return msg, sc, nil
 }

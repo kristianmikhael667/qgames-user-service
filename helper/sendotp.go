@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 func SendOtp(phone string, otp string) (string, int) {
@@ -38,15 +40,15 @@ func SendOtp(phone string, otp string) (string, int) {
 	// Convert payload to JSON
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		fmt.Println("Error:", err)
-		return err.Error(), 500
+		fmt.Println("Convert payload to JSON ", err)
+		return "Convert payload to JSON", 500
 	}
 
 	// Create HTTP request
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		fmt.Println("Error:", err)
-		return err.Error(), 500
+		log.Print("Error Create HTTP request ", err)
+		return "Error Create HTTP request", 500
 	}
 
 	// Set request headers
@@ -57,13 +59,12 @@ func SendOtp(phone string, otp string) (string, int) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error:", err)
-		return err.Error(), res.StatusCode
+		log.Print("Error Send HTTP request ", err)
+		return "Error Send HTTP request", res.StatusCode
 	}
 	defer res.Body.Close()
 
 	// Process response
-	fmt.Println("Response status:", res.Status)
-	Logger("info", "Success Send OTP to number: "+phone, "Rc: "+res.Status)
+	log.Print("info", "Success Send OTP to number: "+phone, "Rc: "+res.Status)
 	return res.Status, res.StatusCode
 }

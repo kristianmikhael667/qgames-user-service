@@ -1,0 +1,73 @@
+stages:
+  - build
+  # - deploy
+
+variables:
+  TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
+  TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
+  APP_NAME: qrowid-user
+  DB_PORT: 3306
+  DB_NAME: qgames_users_db
+  MONGODB_DB: db_notifications
+  MONGODB_COLLECTION: tbl_fcm_users
+  APP_PORT: 3001
+  TOTAL_DEVICE: 2
+  DOCKER_NETWORK: qrowid-net
+  K8S_TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME-k8s:latest
+  K8S_TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME-k8s:$CI_COMMIT_SHORT_SHA
+  K8S_YAML: user-deploy.yml
+  K8S_SERVICE_YAML: user-service.yml
+  K8S_DPL_NAME: qrowid-user-dpl
+  K8S_NAMESPACE: qrowid-production
+
+k8s_build:
+  stage: build
+  image: docker:20.10-dind
+  services:
+    - docker:20.10-dind
+  before_script:
+    - echo -e "DB_HOST=$DB_HOST_PROD \n
+      DB_USER=$DB_USER \n
+      DB_PASS=$DB_PASS_PROD \n
+      DB_PORT=$DB_PORT \n
+      DB_NAME=$DB_NAME \n
+      MONGODB_URI=$MONGODB_URI_PROD \n
+      MONGODB_DB=$MONGODB_DB \n
+      MONGODB_COLLECTION=$MONGODB_COLLECTION \n
+      APP_PORT=$APP_PORT \n
+      VENDOR_QONTAK=$VENDOR_QONTAK \n
+      MESSAGE_TEMPLATE=$MESSAGE_TEMPLATE \n
+      CHANNEL_ID=$CHANNEL_ID \n
+      TOKEN_QONTAK=$TOKEN_QONTAK \n
+      TOTAL_DEVICE=$TOTAL_DEVICE \n
+      NUMBER_FAKE=$NUMBER_FAKE \n
+      OTP_FAKE=$OTP_FAKE \n
+      JWT_SECRET=$JWT_SECRET_PROD" >> .env
+
+  script:
+    - docker build -t $K8S_TAG_COMMIT -t $K8S_TAG_LATEST .
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker push $K8S_TAG_COMMIT
+    - docker push $K8S_TAG_LATEST
+  only:
+    - master 
+
+# deploy_k8s:
+#   stage: deploy
+#   image: dtzar/helm-kubectl
+#   script:
+#     - kubectl config set-cluster k8s --server="$K8S_SERVER"
+#     - kubectl config set clusters.k8s.certificate-authority-data "$K8S_CA_B64"
+#     - kubectl config set-credentials gitlab --token="$K8S_TOKEN"
+#     - kubectl config set-context gitlab --cluster=k8s --user=gitlab
+#     - kubectl config use-context gitlab
+#     - kubectl apply -f ci/deployment/"$K8S_YAML" --validate=false -v=8
+#     - kubectl apply -f ci/service/"$K8S_SERVICE_YAML"
+#     - kubectl rollout restart deployment "$K8S_DPL_NAME" -n "$K8S_NAMESPACE"
+#   only:
+#     - dev
+
+
+
+    #  cd ci/deployment && kubectl apply -f "$K8S_YAML" && cd .. && cd ci/service && kubectl apply -f "$K8S_SERVICE_YAML" && cd ..
+    # kubectl rollout restart deployment "$K8S_DPL_NAME" -n $K8S_NAMESPACE"

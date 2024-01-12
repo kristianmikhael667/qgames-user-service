@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"main/internal/dto"
 	model "main/internal/model"
 	"strings"
 	"time"
@@ -12,6 +14,8 @@ import (
 type Attempt interface {
 	CreateAttempt(ctx context.Context, phone string) (model.Attempt, int, string, error)
 	UpdateAttemptOtp(ctx context.Context, phone string) (int, string, error)
+	ResetAttemptOtp(ctx context.Context, payload *dto.RequestReset) (int, string, error)
+	ResetAttemptPin(ctx context.Context, payload *dto.RequestReset) (int, string, error)
 }
 
 type attempt struct {
@@ -56,7 +60,49 @@ func (r *attempt) UpdateAttemptOtp(ctx context.Context, phone string) (int, stri
 	}
 	attemp.OtpAttempt = 0
 	if err := r.Db.WithContext(ctx).Save(&attemp).Error; err != nil {
-		return 403, "Error update phone attemp", err
+		return 500, "Error update phone attemp", err
 	}
 	return 201, "Success update", nil
+}
+
+// Admin will reset otp
+func (r *attempt) ResetAttemptOtp(ctx context.Context, payload *dto.RequestReset) (int, string, error) {
+	var attemp model.Attempt
+
+	phones := strings.Replace(payload.Phone, "+62", "0", -1)
+
+	if err := r.Db.WithContext(ctx).Model(&model.Attempt{}).Where("phone = ?", phones).First(&attemp).Error; err != nil {
+		return 404, "Error get phone attemp", err
+	}
+	if attemp.OtpAttempt == 3 {
+		attemp.OtpAttempt = 0
+		if err := r.Db.WithContext(ctx).Save(&attemp).Error; err != nil {
+			return 500, "Error update phone attemp", err
+		}
+		return 201, "Success Reset OTP", nil
+	} else {
+		return 403, "Your OTP have to up 3", nil
+	}
+
+}
+
+// Admin will reset otp
+func (r *attempt) ResetAttemptPin(ctx context.Context, payload *dto.RequestReset) (int, string, error) {
+	var attemp model.Attempt
+
+	phones := strings.Replace(payload.Phone, "+62", "0", -1)
+
+	if err := r.Db.WithContext(ctx).Model(&model.Attempt{}).Where("phone = ?", phones).First(&attemp).Error; err != nil {
+		return 404, "Error get phone attemp", err
+	}
+	fmt.Println("Adada ", attemp.PinAttempt)
+	if attemp.PinAttempt == 3 {
+		attemp.PinAttempt = 0
+		if err := r.Db.WithContext(ctx).Save(&attemp).Error; err != nil {
+			return 500, "Error update phone attemp", err
+		}
+		return 201, "Success Reset PIN", nil
+	} else {
+		return 403, "Your PIN have to up 3", nil
+	}
 }
